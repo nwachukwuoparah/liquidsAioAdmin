@@ -1,0 +1,6 @@
+// app/page.tsx  (very thin)
+import { redirect } from 'next/navigation';
+
+export default function Home() {
+  return redirect('/overview');
+}
