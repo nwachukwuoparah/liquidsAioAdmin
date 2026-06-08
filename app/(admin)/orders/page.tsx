@@ -50,13 +50,19 @@ const MOCK_ORDERS_DATA = [
     { id: "8.", orderId: "#ORD-2024-002", title: "Office Supplies Pallet – Printers, Paper, Toners", seller: "Kathryn Murphy", buyer: "Savannah Nguyen", amount: "$1,100", payStatus: "Refunded", orderStatus: "Order completed", date: "05-07-2025", colorBg: "bg-indigo-100" },
 ];
 
-const TABS = [
+type OrderTab = {
+    id: string;
+    label: string;
+    dividerBefore?: boolean;
+};
+
+const TABS: OrderTab[] = [
     { id: "All", label: "All" },
     { id: "Active orders", label: "Active orders" },
     { id: "Completed", label: "Completed" },
     { id: "Dispute / Refunds", label: "Dispute / Refunds", dividerBefore: true },
     { id: "Cancelled", label: "Cancelled" },
-] as const;
+];
 
 export default function AllOrdersDashboardContentSection() {
     const [activeTab, setActiveTab] = useState<string>("All");

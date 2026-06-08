@@ -5,7 +5,7 @@ import type { InputHTMLAttributes } from "react";
 
 type SearchInputSize = "default" | "compact";
 
-interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
     containerClassName?: string;
     size?: SearchInputSize;
 }

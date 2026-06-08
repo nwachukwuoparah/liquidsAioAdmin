@@ -55,20 +55,22 @@ function ChartTooltip({
 }
 
 type DateTickProps = {
-    x?: number;
-    y?: number;
+    x?: number | string;
+    y?: number | string;
     payload?: { value: string };
     selectedDate: string | null;
     onSelectDate: (date: string) => void;
 };
 
 function DateTick({ x = 0, y = 0, payload, selectedDate, onSelectDate }: DateTickProps) {
+    const xPos = typeof x === "number" ? x : Number(x) || 0;
+    const yPos = typeof y === "number" ? y : Number(y) || 0;
     const label = payload?.value ?? "";
     const isSelected = label === selectedDate;
     const width = Math.max(label.length * 6.5 + 16, 44);
 
     return (
-        <g transform={`translate(${x},${y})`}>
+        <g transform={`translate(${xPos},${yPos})`}>
             <foreignObject
                 x={-width / 2}
                 y={4}

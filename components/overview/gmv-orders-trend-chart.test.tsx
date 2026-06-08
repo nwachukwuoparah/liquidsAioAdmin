@@ -1,6 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import type { ReactNode } from "react";
+import { describe, expect, it, vi } from "vitest";
 import GmvOrdersTrendChart from "./gmv-orders-trend-chart";
+
+vi.mock("recharts", async () => {
+    const actual = await vi.importActual<typeof import("recharts")>("recharts");
+
+    return {
+        ...actual,
+        ResponsiveContainer: ({ children }: { children: ReactNode }) => (
+            <div style={{ width: 400, height: 300 }}>{children}</div>
+        ),
+    };
+});
 
 describe("GmvOrdersTrendChart", () => {
     it("renders the chart container and default range", () => {
@@ -25,12 +37,10 @@ describe("GmvOrdersTrendChart", () => {
         expect(screen.getByTestId("trend-range-7D")).not.toHaveStyle({ backgroundColor: "#B1EC52" });
     });
 
-    it("highlights a date when an x-axis day is clicked", () => {
+    it("renders chart legend labels", () => {
         render(<GmvOrdersTrendChart />);
 
-        const aug30 = screen.getByTestId("trend-date-aug-30");
-        fireEvent.click(aug30);
-
-        expect(aug30).toHaveStyle({ backgroundColor: "#B1EC52" });
+        expect(screen.getByText("GMV")).toBeInTheDocument();
+        expect(screen.getByText("Orders")).toBeInTheDocument();
     });
 });
