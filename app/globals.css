@@ -25,3 +25,54 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.auth-phone-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 1px solid #0b0e0514;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0.625rem 0.875rem;
+  transition: border-color 150ms ease;
+}
+
+.auth-phone-input:focus-within {
+  border-color: #518300;
+}
+
+.auth-phone-input--error {
+  border-color: #cc2929;
+}
+
+.auth-phone-input--disabled {
+  background: #f8fafc;
+  border-color: transparent;
+  opacity: 0.85;
+}
+
+.auth-phone-input__number,
+.auth-phone-input .PhoneInputInput {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #0b0e05;
+  outline: none;
+}
+
+.auth-phone-input__number::placeholder,
+.auth-phone-input .PhoneInputInput::placeholder {
+  color: #0b0e05a3;
+}
+
+.auth-phone-input .PhoneInputCountry {
+  margin-right: 0.25rem;
+}
+
+.auth-phone-input .PhoneInputCountrySelect {
+  font-size: 0.875rem;
+}

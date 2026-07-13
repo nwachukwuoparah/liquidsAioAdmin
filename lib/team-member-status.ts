@@ -1,7 +1,13 @@
-export type TeamMemberStatus = "Active" | "Pending";
+export type TeamMemberStatus = "Active" | "Pending" | "Revoked";
 
 export function getMemberStatusStyles(status: TeamMemberStatus): string {
-    return status === "Active"
-        ? "bg-[#00A34114] text-[#00A341]"
-        : "bg-[#DC680314] text-[#DC6803]";
+    if (status === "Active") {
+        return "bg-[#00A34114] text-[#00A341]";
+    }
+
+    if (status === "Revoked") {
+        return "bg-[#D92D2014] text-[#D92D20]";
+    }
+
+    return "bg-[#DC680314] text-[#DC6803]";
 }

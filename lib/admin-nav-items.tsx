@@ -11,9 +11,12 @@ import type { ComponentType, SVGProps } from "react";
 
 export type AdminNavIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
+/** Which live queue count drives the red nav badge, if any. */
+export type AdminNavBadgeKey = "compliance" | "rfqs" | "inventory";
+
 export type AdminNavItem = {
     label: string;
-    badge: string | null;
+    badgeKey: AdminNavBadgeKey | null;
     pathname: string;
     Icon: AdminNavIcon;
     dividerAfter?: boolean;
@@ -23,21 +26,21 @@ export type AdminNavItem = {
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     {
         label: "Overview",
-        badge: null,
+        badgeKey: null,
         pathname: "/overview",
         Icon: OverviewIcon,
         showInBottomNav: true,
     },
     {
         label: "Compliance",
-        badge: "13",
+        badgeKey: "compliance",
         pathname: "/compliance",
         Icon: ComplianceIcon,
         showInBottomNav: true,
     },
     {
         label: "Buyer RFQs",
-        badge: "99+",
+        badgeKey: "rfqs",
         pathname: "/rfqs",
         Icon: BuyerRfqsIcon,
         dividerAfter: true,
@@ -45,21 +48,21 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     },
     {
         label: "All users",
-        badge: null,
+        badgeKey: null,
         pathname: "/users",
         Icon: AllUsersIcon,
         showInBottomNav: true,
     },
     {
-        label: "Inventory",
-        badge: null,
+        label: "All Lots",
+        badgeKey: "inventory",
         pathname: "/inventory",
         Icon: InventoryIcon,
         showInBottomNav: true,
     },
     {
         label: "Orders",
-        badge: null,
+        badgeKey: null,
         pathname: "/orders",
         Icon: OrdersIcon,
         dividerAfter: true,
@@ -67,7 +70,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     },
     {
         label: "Settings",
-        badge: null,
+        badgeKey: null,
         pathname: "/settings",
         Icon: SettingsIcon,
         showInBottomNav: false,

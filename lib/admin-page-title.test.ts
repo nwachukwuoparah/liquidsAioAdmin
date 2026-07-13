@@ -5,7 +5,7 @@ describe("getAdminPageTitle", () => {
     it("returns the title for each main admin route", () => {
         expect(getAdminPageTitle("/compliance")).toBe("Compliance");
         expect(getAdminPageTitle("/overview")).toBe("Overview");
-        expect(getAdminPageTitle("/inventory")).toBe("Inventory");
+        expect(getAdminPageTitle("/inventory")).toBe("All Lots");
         expect(getAdminPageTitle("/orders")).toBe("Orders");
         expect(getAdminPageTitle("/users")).toBe("All users");
         expect(getAdminPageTitle("/rfqs")).toBe("Buyer RFQs");

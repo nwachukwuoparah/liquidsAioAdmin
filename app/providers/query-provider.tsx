@@ -1,22 +1,30 @@
 // components/providers/QueryProvider.tsx
 "use client";
 
-import { ModalProvider } from "@/context/ModalProvider";
+import { ModalProvider } from "@/context/modal-provider";
+import { QueryConfig } from "@/lib/query/query-config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import dynamic from "next/dynamic";
 import { useState } from "react";
+
+const ReactQueryDevtools = dynamic(
+    () =>
+        import("@tanstack/react-query-devtools").then(
+            (reactQueryDevtoolsModule) => reactQueryDevtoolsModule.ReactQueryDevtools,
+        ),
+    { ssr: false },
+);
 
 function makeQueryClient() {
     return new QueryClient({
         defaultOptions: {
             queries: {
-                staleTime: 60 * 1000,        // 1 minute
-                gcTime: 5 * 60 * 1000,       // 5 minutes (was cacheTime)
+                ...QueryConfig.DEFAULT,
+                gcTime: 5 * 60 * 1000,
                 retry: 2,
-                refetchOnWindowFocus: false,
             },
             mutations: {
-                retry: 1,
+                retry: 0,
             },
         },
     });

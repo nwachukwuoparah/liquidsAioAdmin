@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
     Cell,
     Pie,
@@ -11,8 +11,10 @@ import {
     type PieSectorShapeProps,
 } from "recharts";
 import Typography from "@/components/typography";
+import { FloatingMenuPortal } from "@/components/floating-menu-portal";
 import { METRIC_CARD_CLASS } from "@/lib/card-styles";
 import { ChevronDownIcon } from "@/components/vector";
+import { useFloatingMenu } from "@/lib/hooks/use-floating-menu";
 import {
     CATEGORY_PERIODS,
     formatPercent,
@@ -38,25 +40,23 @@ function renderPieSector(props: PieSectorShapeProps) {
     return <Sector {...sectorProps} stroke="transparent" />;
 }
 
-export default function TopCategoriesChart() {
+export default function TopCategoriesChart({ categoryData }: { categoryData?: CategoryGmvItem[] }) {
     const [period, setPeriod] = useState<CategoryPeriod>("This month");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const { triggerRef, menuRef, menuStyle, isMounted } = useFloatingMenu({
+        isOpen: isDropdownOpen,
+        onClose: () => setIsDropdownOpen(false),
+        placement: "bottom",
+        align: "right",
+    });
 
-    const data = useMemo(() => getCategoryDataForPeriod(period), [period]);
+    const data = useMemo(
+        () => categoryData ?? getCategoryDataForPeriod(period),
+        [categoryData, period],
+    );
     const activeItem: CategoryGmvItem | null =
         activeIndex !== null ? data[activeIndex] ?? null : null;
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsDropdownOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
 
     return (
         <div className={`flex h-full flex-col p-4 sm:p-6 ${METRIC_CARD_CLASS}`}>
@@ -65,8 +65,9 @@ export default function TopCategoriesChart() {
                     Top categories by GMV
                 </Typography>
 
-                <div ref={dropdownRef} className="relative">
+                <div className="relative">
                     <button
+                        ref={triggerRef}
                         type="button"
                         data-testid="category-period-trigger"
                         onClick={() => setIsDropdownOpen((open) => !open)}
@@ -80,38 +81,40 @@ export default function TopCategoriesChart() {
                         />
                     </button>
 
-                    {isDropdownOpen && (
-                        <div
-                            data-testid="category-period-menu"
-                            className="absolute right-0 z-50 mt-1.5 w-44 rounded-xl border border-[#0B0E0514] bg-[#FFFFFF] p-1 shadow-card ring-1 ring-black/5"
-                        >
-                            {CATEGORY_PERIODS.map((option) => (
-                                <button
-                                    key={option}
-                                    type="button"
-                                    data-testid={`category-period-${option.replace(/\s+/g, "-").toLowerCase()}`}
-                                    onClick={() => {
-                                        setPeriod(option);
-                                        setIsDropdownOpen(false);
-                                    }}
-                                    className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left ${
-                                        option === period ? "bg-slate-50" : "hover:bg-slate-50"
-                                    }`}
+                    <FloatingMenuPortal
+                        isOpen={isDropdownOpen}
+                        isMounted={isMounted}
+                        menuRef={menuRef}
+                        menuStyle={menuStyle}
+                        data-testid="category-period-menu"
+                        className="w-44 rounded-xl border border-[#0B0E0514] bg-[#FFFFFF] p-1 shadow-card ring-1 ring-black/5"
+                    >
+                        {CATEGORY_PERIODS.map((option) => (
+                            <button
+                                key={option}
+                                type="button"
+                                data-testid={`category-period-${option.replace(/\s+/g, "-").toLowerCase()}`}
+                                onClick={() => {
+                                    setPeriod(option);
+                                    setIsDropdownOpen(false);
+                                }}
+                                className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left ${
+                                    option === period ? "bg-slate-50" : "hover:bg-slate-50"
+                                }`}
+                            >
+                                <Typography
+                                    type="text12"
+                                    fontWeight={option === period ? 700 : 500}
+                                    className={option === period ? "text-[#518300]" : "text-slate-600"}
                                 >
-                                    <Typography
-                                        type="text12"
-                                        fontWeight={option === period ? 700 : 500}
-                                        className={option === period ? "text-[#518300]" : "text-slate-600"}
-                                    >
-                                        {option}
-                                    </Typography>
-                                    {option === period && (
-                                        <div className="h-1.5 w-1.5 rounded-full bg-[#518300]" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                                    {option}
+                                </Typography>
+                                {option === period && (
+                                    <div className="h-1.5 w-1.5 rounded-full bg-[#518300]" />
+                                )}
+                            </button>
+                        ))}
+                    </FloatingMenuPortal>
                 </div>
             </div>
 

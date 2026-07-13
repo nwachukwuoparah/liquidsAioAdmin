@@ -13,4 +13,10 @@ describe("admin nav items", () => {
         expect(isAdminNavItemActive("/settings/profile", "/settings")).toBe(true);
         expect(isAdminNavItemActive("/inventory", "/orders")).toBe(false);
     });
+
+    it("labels the inventory route as All Lots", () => {
+        expect(ADMIN_NAV_ITEMS.find((item) => item.pathname === "/inventory")?.label).toBe(
+            "All Lots",
+        );
+    });
 });

@@ -2,16 +2,25 @@
 
 import UserProfileMenu from "@/components/user-profile-menu";
 import { NotificationBellIcon } from "@/components/vector";
+import { useAdminSessionProfile } from "@/lib/auth/hooks/use-admin-session-profile";
 
 interface HeaderProps {
   title?: string;
 }
 
 export default function Header({ title = "Overview" }: HeaderProps) {
+  const sessionProfileState = useAdminSessionProfile();
+
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-[#0B0E0514] bg-[#FFFFFF] px-4 lg:h-18 lg:px-6">
       <div className="flex min-w-0 items-center gap-3">
-        <UserProfileMenu variant="avatar-only" menuAlign="left" className="lg:hidden" />
+        <UserProfileMenu
+          variant="avatar-only"
+          menuAlign="left"
+          className="lg:hidden"
+          sessionProfile={sessionProfileState.sessionProfile}
+          isSessionProfileReady={sessionProfileState.isSessionProfileReady}
+        />
         <h1 className="truncate text-xl font-bold tracking-tight text-[#0B0E05] lg:text-2xl">
           {title}
         </h1>
@@ -29,7 +38,11 @@ export default function Header({ title = "Overview" }: HeaderProps) {
           </span>
         </button>
 
-        <UserProfileMenu className="hidden lg:block" />
+        <UserProfileMenu
+          className="hidden lg:block"
+          sessionProfile={sessionProfileState.sessionProfile}
+          isSessionProfileReady={sessionProfileState.isSessionProfileReady}
+        />
       </div>
     </header>
   );

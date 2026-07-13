@@ -37,7 +37,7 @@ describe("DynamicFilters", () => {
         );
 
         fireEvent.click(screen.getByRole("button", { name: /lot status/i }));
-        fireEvent.click(screen.getByRole("button", { name: "Active" }));
+        fireEvent.click(screen.getByRole("option", { name: "Active" }));
 
         expect(onFilterChange).toHaveBeenCalledWith("status", "Active");
     });

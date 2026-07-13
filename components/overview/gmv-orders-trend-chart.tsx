@@ -116,10 +116,13 @@ function ChartLegend() {
     );
 }
 
-export default function GmvOrdersTrendChart() {
+export default function GmvOrdersTrendChart({ trendData }: { trendData?: TrendDataPoint[] }) {
     const [range, setRange] = useState<TrendRange>("30D");
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const data = useMemo(() => getTrendDataForRange(range), [range]);
+    const data = useMemo(
+        () => trendData ?? getTrendDataForRange(range),
+        [range, trendData],
+    );
 
     useEffect(() => {
         const hasSelection = selectedDate && data.some((point) => point.date === selectedDate);

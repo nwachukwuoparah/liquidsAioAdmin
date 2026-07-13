@@ -1,6 +1,6 @@
-// app/page.tsx  (very thin)
-import { redirect } from 'next/navigation';
+import { AUTH_ENTRY_ROUTE } from "@/lib/auth/constants/auth-routes.constant";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return redirect('/overview');
+  return redirect(AUTH_ENTRY_ROUTE);
 }

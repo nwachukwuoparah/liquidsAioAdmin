@@ -3,10 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import ComplianceFilters, { COMPLIANCE_FILTER_BLUEPRINTS } from "./compliance-filters";
 
 const defaultSelectedValues = {
-    accountType: "All account types",
-    reviewStatus: "All statuses",
-    dateRange: "All time",
-    assignedTo: "Everyone",
+    account_type: undefined,
+    compliance_review_status: undefined,
+    dateRange: undefined,
 };
 
 describe("ComplianceFilters", () => {
@@ -23,11 +22,11 @@ describe("ComplianceFilters", () => {
             />
         );
 
-        fireEvent.click(screen.getByTestId("compliance-filter-accountType"));
-        expect(screen.getByTestId("compliance-filter-menu-accountType")).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId("compliance-filter-account_type"));
+        expect(screen.getByTestId("compliance-filter-menu-account_type")).toBeInTheDocument();
 
-        fireEvent.click(screen.getByTestId("compliance-filter-option-accountType-buyer"));
-        expect(onFilterChange).toHaveBeenCalledWith("accountType", "Buyer");
+        fireEvent.click(screen.getByTestId("compliance-filter-option-account_type-buyer"));
+        expect(onFilterChange).toHaveBeenCalledWith("account_type", "Buyer");
     });
 
     it("updates the search input", () => {
@@ -44,10 +43,10 @@ describe("ComplianceFilters", () => {
         );
 
         fireEvent.change(screen.getByTestId("compliance-search-input"), {
-            target: { value: "Mary" },
+            target: { value: "mary@buyer.com" },
         });
 
-        expect(onSearchChange).toHaveBeenCalledWith("Mary");
+        expect(onSearchChange).toHaveBeenCalledWith("mary@buyer.com");
     });
 
     it("shows the selected value on an active filter trigger", () => {
@@ -58,12 +57,12 @@ describe("ComplianceFilters", () => {
                 filters={COMPLIANCE_FILTER_BLUEPRINTS}
                 selectedValues={{
                     ...defaultSelectedValues,
-                    reviewStatus: "In Review",
+                    compliance_review_status: "In review",
                 }}
                 onFilterChange={vi.fn()}
             />
         );
 
-        expect(screen.getByTestId("compliance-filter-reviewStatus")).toHaveTextContent("In Review");
+        expect(screen.getByTestId("compliance-filter-compliance_review_status")).toHaveTextContent("In review");
     });
 });

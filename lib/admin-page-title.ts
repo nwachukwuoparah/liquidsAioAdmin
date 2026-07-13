@@ -4,7 +4,7 @@ const ADMIN_PAGE_TITLES = [
     { prefix: "/compliance", title: "Compliance" },
     { prefix: "/rfqs", title: "Buyer RFQs" },
     { prefix: "/users", title: "All users" },
-    { prefix: "/inventory", title: "Inventory" },
+    { prefix: "/inventory", title: "All Lots" },
     { prefix: "/orders", title: "Orders" },
 ] as const;
 

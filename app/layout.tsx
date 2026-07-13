@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Mulish } from "next/font/google";
 import localFont from "next/font/local";
 import QueryProvider from "./providers/query-provider";
+import { NavigationProgressBar } from "@/components/navigation/navigation-progress-bar";
 import { Toaster } from "sonner";
 import Script from 'next/script';
 
@@ -27,7 +28,9 @@ export const metadata: Metadata = {
   title: "LiquidsAIO",
   description: "LiquidsAIO",
   icons: {
-    icon: '/images/auth/logo.svg',
+    icon: [{ url: "/favicon.png", type: "image/png", sizes: "128x138" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "128x138" }],
+    shortcut: "/favicon.png",
   },
 };
 
@@ -40,6 +43,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           // strategy="afterInteractive"
         />
         <QueryProvider>
+          <NavigationProgressBar />
           {children}
         </QueryProvider>
         <Toaster position="top-right" richColors closeButton />   {/* ← Add this */}

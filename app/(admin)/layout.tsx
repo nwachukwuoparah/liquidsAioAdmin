@@ -1,6 +1,8 @@
 "use client";
 import { getAdminPageTitle } from "@/lib/admin-page-title";
-import React from "react";
+import { bootstrapAuthSession } from "@/lib/auth/utilities/bootstrap-auth-session";
+import { flushPendingRefreshTokenExpiryLog } from "@/lib/auth/utilities/refresh-token-expiry-storage";
+import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import BottomNav from "./bottom-nav";
 import Sidebar from "./sidebar";
@@ -9,6 +11,11 @@ import Header from "./header";
 export default function DashboardLayout({ children }: { children: React.ReactNode; }): React.ReactNode {
     const pathname = usePathname();
     const isSettingsRoute = pathname.startsWith("/settings");
+
+    useEffect(() => {
+        bootstrapAuthSession();
+        flushPendingRefreshTokenExpiryLog();
+    }, []);
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-[#FFFFFF]">

@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { EmptyState } from "@/components/empty-state";
+import { AdminAsyncContent, AdminQueryState, DataTableSkeleton, ListRowsSkeleton, StatCardsSkeleton } from "@/components/skeletons";
 import DynamicFilters, { type FilterConfig } from "@/components/dynamic-filters";
+import { useAdminOrders, useAdminOrderStats } from "@/lib/admin/hooks";
+import { getAdminIconComponent } from "@/lib/admin/utilities/admin-icon-map";
 import { CARD_BG_CLASS, LIST_CARD_CLASS, PANEL_CARD_CLASS, PANEL_CARD_SHELL_CLASS, SECTION_CARD_CLASS, STAT_CARD_CLASS } from "@/lib/card-styles";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
@@ -26,29 +30,6 @@ import {
 } from "@/components/vector";
 
 const FILTER_ICON_CLASS = "h-5 w-5 shrink-0 text-[#343330]";
-
-type QuickStatCard = {
-    title: string;
-    count: string;
-    change: string;
-    trendDirection: "up" | "down";
-    isPositive: boolean;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    iconBg: string;
-    iconColor: string;
-    iconClassName?: string;
-};
-
-const MOCK_ORDERS_DATA = [
-    { id: "1.", orderId: "#ORD-2024-001", title: "Mixed Electronics Pallet – Headphones, Speakers, Chargers", seller: "Savannah Nguyen", buyer: "John Peters", amount: "$9,000", payStatus: "In Escrow", orderStatus: "Awaiting shipment", date: "05-07-2025", colorBg: "bg-amber-100" },
-    { id: "2.", orderId: "#ORD-2024-002", title: "Branded Apparel – 300 pcs (Nike, Adidas, Under Armour)", seller: "Ronald Richards", buyer: "Wade Warren", amount: "$1,500", payStatus: "Released", orderStatus: "Awaiting shipment", date: "04-07-2025", colorBg: "bg-blue-100" },
-    { id: "3.", orderId: "#ORD-2024-003", title: "Kitchenware Overstock – 2 Pallets (Cookware & Utensils)", seller: "Robert Fox", buyer: "Kathryn Murphy", amount: "$800", payStatus: "Released", orderStatus: "In-transit", date: "03-07-2025", colorBg: "bg-[#0B0E050A]" },
-    { id: "4.", orderId: "#ORD-2024-004", title: "Beauty & Cosmetics Lot – 500 Mixed Units", seller: "Marvin McKinney", buyer: "Ronald Richards", amount: "$1,200", payStatus: "In Escrow", orderStatus: "Awaiting shipment", date: "05-07-2025", colorBg: "bg-red-100" },
-    { id: "5.", orderId: "#ORD-2024-002", title: "Baby Products Pallet – Diapers, Toys, Accessories", seller: "John stockton", buyer: "Cameron Williamson", amount: "$950", payStatus: "Released", orderStatus: "Delivered", date: "05-07-2025", colorBg: "bg-purple-100" },
-    { id: "6.", orderId: "#ORD-2024-002", title: "Automotive Accessories – 150 Mixed Items", seller: "Cameron Williamson", buyer: "Marvin McKinney", amount: "$1,700", payStatus: "In Escrow", orderStatus: "Dispute", date: "05-07-2025", colorBg: "bg-emerald-100" },
-    { id: "7.", orderId: "#ORD-2024-002", title: "Grocery Shelf Pulls – Snacks & Beverages", seller: "Wade Warren", buyer: "Robert Fox", amount: "$600", payStatus: "Refunded", orderStatus: "Cancelled", date: "05-07-2025", colorBg: "bg-amber-100" },
-    { id: "8.", orderId: "#ORD-2024-002", title: "Office Supplies Pallet – Printers, Paper, Toners", seller: "Kathryn Murphy", buyer: "Savannah Nguyen", amount: "$1,100", payStatus: "Refunded", orderStatus: "Order completed", date: "05-07-2025", colorBg: "bg-indigo-100" },
-];
 
 type OrderTab = {
     id: string;
@@ -113,93 +94,14 @@ export default function AllOrdersDashboardContentSection() {
 
     const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({});
 
+    const ordersQuery = useAdminOrders({ tab: activeTab, search: searchQuery });
+    const orderStatsQuery = useAdminOrderStats();
+    const orderRecords = ordersQuery.data ?? [];
+    const quickStats = orderStatsQuery.data ?? [];
+
     const handleFilterUpdate = (filterId: string, value: string) => {
         setSelectedFilters((prev) => ({ ...prev, [filterId]: value }));
     };
-
-    const quickStats: QuickStatCard[] = [
-        {
-            title: "Total Orders (YTD)",
-            count: "2,486",
-            change: "+145",
-            trendDirection: "up",
-            isPositive: true,
-            icon: TruckIcon,
-            iconBg: "bg-[#BE02BE14]",
-            iconColor: "text-[#BE02BE]",
-        },
-        {
-            title: "Active Orders",
-            count: "307",
-            change: "+12%",
-            trendDirection: "up",
-            isPositive: true,
-            icon: ThumbsUpIcon,
-            iconBg: "bg-[#00A34114]",
-            iconColor: "text-[#00A341]",
-        },
-        {
-            title: "Completed Orders",
-            count: "115",
-            change: "+3%",
-            trendDirection: "up",
-            isPositive: true,
-            icon: CheckCircleIcon,
-            iconBg: "bg-[#00A34114]",
-            iconColor: "text-[#00A341]",
-        },
-        {
-            title: "Disputed Orders",
-            count: "19",
-            change: "-2%",
-            trendDirection: "down",
-            isPositive: true,
-            icon: FlagIcon,
-            iconBg: "bg-[#CC292914]",
-            iconColor: "text-[#CC2929]",
-            iconClassName: "h-4 w-[15px]",
-        },
-        {
-            title: "All Refunds Issued",
-            count: "30",
-            change: "+3%",
-            trendDirection: "up",
-            isPositive: false,
-            icon: ArrowUUpLeftIcon,
-            iconBg: "bg-[#CC292914]",
-            iconColor: "text-[#CC2929]",
-        },
-        {
-            title: "Currently in Escrow",
-            count: "$49,500",
-            change: "+3%",
-            trendDirection: "up",
-            isPositive: true,
-            icon: ArrowsLeftRightIcon,
-            iconBg: "bg-[#BE02BE14]",
-            iconColor: "text-[#BE02BE]",
-        },
-        {
-            title: "Avg. Order Value",
-            count: "$2,342",
-            change: "+5%",
-            trendDirection: "up",
-            isPositive: true,
-            icon: TruckIcon,
-            iconBg: "bg-[#1A1AFF14]",
-            iconColor: "text-[#1A1AFF]",
-        },
-        {
-            title: "Platform Fees Earning",
-            count: "$3,209",
-            change: "-12%",
-            trendDirection: "down",
-            isPositive: false,
-            icon: HandCoinsIcon,
-            iconBg: "bg-[#DC680314]",
-            iconColor: "text-[#DC6803]",
-        },
-    ];
 
     return (
         <div className="mx-auto min-h-screen w-full max-w-[1600px] space-y-6 p-4 font-sans antialiased lg:p-8">
@@ -213,9 +115,13 @@ export default function AllOrdersDashboardContentSection() {
                     <PeriodDropdown value={statsPeriod} onChange={setStatsPeriod} />
                 </div>
 
+                {orderStatsQuery.isLoading ? (
+                    <StatCardsSkeleton count={8} columnsClassName="grid grid-cols-2 gap-3.5 md:grid-cols-4" />
+                ) : (
+                <AdminQueryState isError={orderStatsQuery.isError} onRetry={() => void orderStatsQuery.refetch()}>
                 <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
                     {quickStats.map((card) => {
-                        const Icon = card.icon;
+                        const Icon = getAdminIconComponent(card.iconKey);
                         const changeClass = card.isPositive ? "text-[#00A341]" : "text-[#CC2929]";
 
                         return (
@@ -256,6 +162,8 @@ export default function AllOrdersDashboardContentSection() {
                         );
                     })}
                 </div>
+                </AdminQueryState>
+                )}
             </div>
 
             {/* MAIN TABLE PANEL */}
@@ -355,7 +263,14 @@ export default function AllOrdersDashboardContentSection() {
 
                 {/* MOBILE LIST */}
                 <div className="block space-y-3 p-4 md:hidden">
-                    {MOCK_ORDERS_DATA.map((order, index) => (
+                    <AdminQueryState isError={ordersQuery.isError} onRetry={() => void ordersQuery.refetch()}>
+                        <AdminAsyncContent
+                            isLoading={ordersQuery.isLoading}
+                            isEmpty={orderRecords.length === 0}
+                            loadingFallback={<ListRowsSkeleton rows={5} />}
+                            emptyFallback={<EmptyState title="No orders found" />}
+                        >
+                            {orderRecords.map((order, index) => (
                         <div key={index} className={`flex flex-col space-y-3 p-4 ${LIST_CARD_CLASS}`}>
                             <div className="flex w-full min-w-0 items-center gap-3">
                                 <div className={`h-10 w-10 shrink-0 rounded-xl border border-black/5 ${order.colorBg}`} />
@@ -395,8 +310,11 @@ export default function AllOrdersDashboardContentSection() {
                                     </Typography>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                            </div>
+                            ))}
+                        </AdminAsyncContent>
+                    </AdminQueryState>
+                    {!ordersQuery.isLoading && orderRecords.length > 0 ? (
                     <div className="pt-2">
                         <button
                             type="button"
@@ -408,10 +326,18 @@ export default function AllOrdersDashboardContentSection() {
                             <span className="mb-0.5 ml-0.5 block h-1.5 w-1.5 rotate-45 border-b-2 border-r-2 border-[#0B0E0514]" />
                         </button>
                     </div>
+                    ) : null}
                 </div>
 
                 {/* DESKTOP TABLE */}
                 <div className="hidden w-full md:block">
+                    <AdminQueryState isError={ordersQuery.isError} onRetry={() => void ordersQuery.refetch()}>
+                        <AdminAsyncContent
+                            isLoading={ordersQuery.isLoading}
+                            isEmpty={orderRecords.length === 0}
+                            loadingFallback={<DataTableSkeleton rows={8} columns={10} />}
+                            emptyFallback={<EmptyState title="No orders found" />}
+                        >
                     <div className="w-full overflow-x-auto">
                         <table className="w-full min-w-[1320px] table-auto border-collapse text-left">
                             <thead>
@@ -437,7 +363,7 @@ export default function AllOrdersDashboardContentSection() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[#0B0E0514] bg-[#FFFFFF]">
-                                {MOCK_ORDERS_DATA.map((order, index) => (
+                                {orderRecords.map((order, index) => (
                                     <tr key={index} className="transition-colors hover:bg-[#0B0E050A]">
                                         <td className="py-4 pl-6 pr-2 text-center">
                                             <Typography type="text14" fontWeight={600} className="text-[#0B0E05A3]">
@@ -571,6 +497,8 @@ export default function AllOrdersDashboardContentSection() {
                             </button>
                         </div>
                     </div>
+                        </AdminAsyncContent>
+                    </AdminQueryState>
                 </div>
                 </div>
             </div>

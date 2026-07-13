@@ -1,60 +1,62 @@
 "use client";
 
+import { FloatingMenuPortal } from "@/components/floating-menu-portal";
+import { LogoutConfirmationModal } from "@/components/modals/logout-confirmation-modal";
 import Typography from "@/components/typography";
+import { ProfileAvatar } from "@/components/profile-avatar";
 import {
   ListIcon,
   ProfileUserIcon,
   SignOutIcon,
   UsersIcon,
 } from "@/components/vector";
-import { getInitialsFromName, PROFILE_AVATAR_CLASS } from "@/lib/profile-avatar";
+import { useModal } from "@/context/modal-provider";
+import type { AdminSessionProfile } from "@/lib/auth/utilities/resolve-admin-session-profile";
+import { useFloatingMenu } from "@/lib/hooks/use-floating-menu";
+import { COMPLIANCE_REVIEW_MODAL_PANEL_CLASS } from "@/lib/modal/constants/modal.constant";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-
-const PROFILE_NAME = "Samuel Nathaniel";
+import { useState } from "react";
 
 type UserProfileMenuProps = {
   variant?: "default" | "avatar-only";
   menuAlign?: "left" | "right";
   className?: string;
+  sessionProfile: AdminSessionProfile | null;
+  isSessionProfileReady: boolean;
 };
-
-function UserAvatar({ size = "sm" }: { size?: "sm" | "lg" }) {
-  const dimensions = size === "lg" ? "h-12 w-12 text-sm" : "h-9 w-9 text-xs lg:h-8 lg:w-8";
-
-  return (
-    <div
-      className={`${dimensions} flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#0B0E0514] font-bold ${PROFILE_AVATAR_CLASS}`}
-    >
-      {getInitialsFromName(PROFILE_NAME)}
-    </div>
-  );
-}
 
 export default function UserProfileMenu({
   variant = "default",
   menuAlign = "right",
   className = "",
+  sessionProfile,
+  isSessionProfileReady,
 }: UserProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const { showModal } = useModal();
+  const { triggerRef, menuRef, menuStyle, isMounted } = useFloatingMenu({
+    isOpen,
+    onClose: () => setIsOpen(false),
+    placement: "bottom",
+    align: menuAlign,
+    offset: 8,
+  });
 
   const isAvatarOnly = variant === "avatar-only";
 
+  const handleLogoutClick = () => {
+    setIsOpen(false);
+    showModal({
+      content: <LogoutConfirmationModal />,
+      panelClassName: COMPLIANCE_REVIEW_MODAL_PANEL_CLASS,
+      dismissOnOverlayClick: false,
+    });
+  };
+
   return (
-    <div ref={menuRef} className={`relative ${className}`}>
+    <div className={`relative ${className}`}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         className={
@@ -66,70 +68,83 @@ export default function UserProfileMenu({
         aria-expanded={isOpen}
       >
         {!isAvatarOnly && <ListIcon className="h-5 w-5 text-[#0B0E05]" />}
-        <UserAvatar />
+        <ProfileAvatar
+          name={sessionProfile?.displayName ?? ""}
+          initials={sessionProfile?.initials}
+          imageUrl={sessionProfile?.profileImageUrl}
+          isLoading={!isSessionProfileReady}
+        />
       </button>
 
-      {isOpen && (
-        <div
-          className={`absolute z-50 mt-2 w-72 rounded-2xl border border-[#0B0E0514] bg-[#FFFFFF] p-4 shadow-card ring-1 ring-black/5 ${
-            menuAlign === "left" ? "left-0" : "right-0"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <UserAvatar size="lg" />
-            <div className="flex min-w-0 flex-col">
-              <Typography type="text16" fontWeight={600} className="truncate text-[#0B0E05]">
-                {PROFILE_NAME}
-              </Typography>
-              <Typography type="text14" fontWeight={400} className="truncate text-[#0B0E05A3]">
-                samuelnath@email.com
-              </Typography>
-              <Typography type="text12" fontWeight={700} className="mt-0.5 text-[#518300]">
-                ADMIN
-              </Typography>
-            </div>
-          </div>
-
-          <hr className="my-4 border-[#0B0E0514]" />
-
-          <div className="space-y-1">
-            <Link
-              href="/settings/profile"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-slate-50"
-            >
-              <ProfileUserIcon className="h-5 w-5 text-[#0B0E05]" />
-              <Typography type="text16" fontWeight={500} className="text-[#0B0E05]">
-                Profile
-              </Typography>
-            </Link>
-
-            <Link
-              href="/settings/teams"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-slate-50"
-            >
-              <UsersIcon className="h-5 w-5 text-[#0B0E05]" />
-              <Typography type="text16" fontWeight={500} className="text-[#0B0E05]">
-                Teams & permission
-              </Typography>
-            </Link>
-          </div>
-
-          <hr className="my-4 border-[#0B0E0514]" />
-
-          <button
-            type="button"
-            onClick={() => setIsOpen(false)}
-            className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-red-50"
-          >
-            <SignOutIcon className="h-5 w-5 text-[#CC2929]" />
-            <Typography type="text16" fontWeight={500} className="text-[#CC2929]">
-              Logout
+      <FloatingMenuPortal
+        isOpen={isOpen}
+        isMounted={isMounted}
+        menuRef={menuRef}
+        menuStyle={menuStyle}
+        className="w-72 rounded-2xl border border-[#0B0E0514] bg-[#FFFFFF] p-4 shadow-card ring-1 ring-black/5"
+      >
+        <div className="flex items-center gap-3">
+          <ProfileAvatar
+            size="lg"
+            name={sessionProfile?.displayName ?? ""}
+            initials={sessionProfile?.initials}
+            imageUrl={sessionProfile?.profileImageUrl}
+            isLoading={!isSessionProfileReady}
+          />
+          <div className="flex min-w-0 flex-col">
+            <Typography type="text16" fontWeight={600} className="truncate text-[#0B0E05]">
+              {sessionProfile?.displayName ?? ""}
             </Typography>
-          </button>
+            {sessionProfile?.email ? (
+              <Typography type="text14" fontWeight={400} className="truncate text-[#0B0E05A3]">
+                {sessionProfile.email}
+              </Typography>
+            ) : null}
+            <Typography type="text12" fontWeight={700} className="mt-0.5 text-[#518300]">
+              {sessionProfile?.roleLabel ?? ""}
+            </Typography>
+          </div>
         </div>
-      )}
+
+        <hr className="my-4 border-[#0B0E0514]" />
+
+        <div className="space-y-1">
+          <Link
+            href="/settings/profile"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-slate-50"
+          >
+            <ProfileUserIcon className="h-5 w-5 text-[#0B0E05]" />
+            <Typography type="text16" fontWeight={500} className="text-[#0B0E05]">
+              Profile
+            </Typography>
+          </Link>
+
+          <Link
+            href="/settings/teams"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-slate-50"
+          >
+            <UsersIcon className="h-5 w-5 text-[#0B0E05]" />
+            <Typography type="text16" fontWeight={500} className="text-[#0B0E05]">
+              Teams & permission
+            </Typography>
+          </Link>
+        </div>
+
+        <hr className="my-4 border-[#0B0E0514]" />
+
+        <button
+          type="button"
+          onClick={handleLogoutClick}
+          className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-red-50"
+        >
+          <SignOutIcon className="h-5 w-5 text-[#CC2929]" />
+          <Typography type="text16" fontWeight={500} className="text-[#CC2929]">
+            Logout
+          </Typography>
+        </button>
+      </FloatingMenuPortal>
     </div>
   );
 }

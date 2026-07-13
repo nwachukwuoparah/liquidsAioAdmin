@@ -3,7 +3,6 @@
 import DynamicFilters, { type FilterConfig } from "@/components/dynamic-filters";
 import SearchInput from "@/components/search-input";
 import {
-    AllUsersIcon,
     CalendarDotsIcon,
     RadioButtonIcon,
     UsersIcon,
@@ -18,23 +17,23 @@ interface ComplianceFiltersProps {
     searchQuery: string;
     onSearchChange: (value: string) => void;
     filters: ComplianceFilterConfig[];
-    selectedValues: Record<string, string>;
+    selectedValues: Record<string, string | undefined>;
     onFilterChange: (filterId: string, value: string) => void;
 }
 
 export const COMPLIANCE_FILTER_BLUEPRINTS: ComplianceFilterConfig[] = [
     {
-        id: "accountType",
+        id: "account_type",
         label: "User type",
         defaultValue: "All account types",
         options: ["All account types", "Buyer", "Seller"],
         icon: <UsersIcon className="h-5 w-5 text-[#343330]" />,
     },
     {
-        id: "reviewStatus",
+        id: "compliance_review_status",
         label: "Review status",
         defaultValue: "All statuses",
-        options: ["All statuses", "Pending", "In Review", "Needs info"],
+        options: ["All statuses", "Pending", "In review", "Approved", "Rejected"],
         icon: <RadioButtonIcon className="h-5 w-5 text-[#343330]" />,
     },
     {
@@ -43,15 +42,6 @@ export const COMPLIANCE_FILTER_BLUEPRINTS: ComplianceFilterConfig[] = [
         defaultValue: "All time",
         options: ["All time", "Today", "This week", "This month", "Last 30 days"],
         icon: <CalendarDotsIcon className="h-5 w-5 text-[#343330]" />,
-    },
-    {
-        id: "assignedTo",
-        label: "Assigned to",
-        defaultValue: "Everyone",
-        options: ["Everyone"],
-        isSearchable: true,
-        searchPlaceholder: "Search assignee...",
-        icon: <AllUsersIcon className="h-5 w-5 text-[#343330]" />,
     },
 ];
 
@@ -67,7 +57,7 @@ export default function ComplianceFilters({
             <SearchInput
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search people by name..."
+                placeholder="Search people by email..."
                 data-testid="compliance-search-input"
                 className="bg-[#F8FAFC] py-2.5 focus:bg-[#FFFFFF]"
             />

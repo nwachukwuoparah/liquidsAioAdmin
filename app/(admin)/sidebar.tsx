@@ -1,6 +1,8 @@
-"use main";
+"use client";
+
 import Typography from "@/components/typography";
 import { LogoIcon } from "@/components/vector";
+import { useAdminNavBadgeCounts } from "@/lib/admin/hooks/use-admin-nav-badge-counts";
 import { ADMIN_NAV_ITEMS, isAdminNavItemActive } from "@/lib/admin-nav-items";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +10,7 @@ import React from "react";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const badgeCounts = useAdminNavBadgeCounts();
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-[#0B0E0514] bg-[#FFFFFF] py-6 lg:flex">
@@ -24,6 +27,7 @@ export default function Sidebar() {
         {ADMIN_NAV_ITEMS.map((item) => {
           const isActive = isAdminNavItemActive(pathname, item.pathname);
           const Icon = item.Icon;
+          const badge = item.badgeKey ? badgeCounts[item.badgeKey] : null;
 
           return (
             <React.Fragment key={item.pathname}>
@@ -53,11 +57,14 @@ export default function Sidebar() {
                     </Typography>
                   </div>
 
-                  {item.badge && (
-                    <span className="min-w-[24px] rounded-full bg-[#CC2929] px-2.5 py-0.5 text-center text-[11px] font-bold text-white shadow-card">
-                      {item.badge}
+                  {badge ? (
+                    <span
+                      data-testid={`nav-badge-${item.badgeKey}`}
+                      className="min-w-[24px] rounded-full bg-[#CC2929] px-2.5 py-0.5 text-center text-[11px] font-bold text-white shadow-card"
+                    >
+                      {badge}
                     </span>
-                  )}
+                  ) : null}
                 </Link>
               </div>
 
