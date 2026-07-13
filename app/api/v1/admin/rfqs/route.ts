@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const rfqs = SAMPLE_ADMIN_RFQS.filter((rfq) => rfq.status === status);
 
     return buildSampleAdminApiSuccessResponse({
-        totalCount: status === "pending" ? SAMPLE_ADMIN_RFQ_TAB_COUNTS.pending : SAMPLE_ADMIN_RFQ_TAB_COUNTS.resolved,
+        totalCount: rfqs.length,
         results: rfqs,
         hasNext: false,
         nextCursor: null,
