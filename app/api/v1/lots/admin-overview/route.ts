@@ -1,10 +1,4 @@
-import {
-    buildSampleAdminApiSuccessResponse,
-    getSampleAdminRouteSearchParams,
-    sampleAdminApiDelay,
-} from "@/lib/admin/utilities/sample-admin-api-route";
-
-function getDefaultMonthRange() {
+function getDefaultRange() {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -21,10 +15,10 @@ function getDefaultMonthRange() {
 }
 
 /** Sample lots admin-overview endpoint matching /v1/lots/admin-overview. */
-export async function GET(request: Request) {
+export async function GET_STATS(request: Request) {
     await sampleAdminApiDelay();
     const searchParams = getSampleAdminRouteSearchParams(request);
-    const defaultRange = getDefaultMonthRange();
+    const defaultRange = getDefaultRange();
 
     return buildSampleAdminApiSuccessResponse({
         range: {
