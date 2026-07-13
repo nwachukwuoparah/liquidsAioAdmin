@@ -580,7 +580,7 @@ import {
 } from "@/lib/users/utilities/user-status-styles";
 import React, { useCallback, useMemo, useState } from "react";
 
-const USER_SEGMENT_TABS = [
+const USER_SEGMENT_TABS: { id: "buyer" | "seller" | "reported"; label: string; countKey: string }[] = [
     { id: "buyer" as const, label: "Buyers", countKey: "buyers" as const },
     { id: "seller" as const, label: "Sellers", countKey: "sellers" as const },
     { id: "reported" as const, label: "Reported", countKey: "reported" as const },
@@ -824,7 +824,7 @@ export default function AllUsersBody() {
 
                         {/* Mobile segment tabs */}
                         <div className="flex items-center gap-2.5 overflow-x-auto px-4 py-3 scrollbar-none md:hidden">
-                            {segmentTabs.map((tab) => {
+                            {USER_SEGMENT_TABS.map((tab) => {
                                 const isSelected: boolean = activeSegmentTab === tab.id;
 
                                 return (
@@ -840,7 +840,7 @@ export default function AllUsersBody() {
                                         <Typography type="text14" fontWeight={isSelected ? 600 : 500} className={`flex items-center gap-2 ${isSelected ? "text-[#518300]" : "!text-[#0B0E05A3]"}`}>
                                             {`${tab.label}`}
                                             <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#CC2929] px-1.5 text-[11px] font-bold leading-none text-white">
-                                                {formatCount(tab.count)}
+                                                {formatCount(Number(tab.countKey))}
                                             </span>
                                         </Typography>
                                     </button>
@@ -850,7 +850,7 @@ export default function AllUsersBody() {
 
                         {/* Desktop segment tabs */}
                         <div className="hidden items-center gap-8 whitespace-nowrap border-b border-[#0B0E0514] px-6 md:flex">
-                            {segmentTabs.map((tab) => {
+                            {USER_SEGMENT_TABS.map((tab) => {
                                 const isSelected = activeSegmentTab === tab.id;
 
                                 return (
@@ -871,7 +871,7 @@ export default function AllUsersBody() {
                                                 {`${tab.label}`}
                                             </Typography>
                                             <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#CC2929] px-1.5 text-[11px] font-bold leading-none text-white">
-                                                {formatCount(tab.count)}
+                                                {formatCount(Number(tab.countKey))}
                                             </span>
                                             {isSelected && (
                                                 <div className="absolute inset-x-0 bottom-0 h-[3px] rounded-t-full bg-[#518300]" />
