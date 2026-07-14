@@ -36,9 +36,7 @@ function normalizeCountryCode(rawCountryCode: string | null | undefined): string
 }
 
 export function resolveRequestCountryCode(request: NextRequest): string | null {
-    const geoCountryCode = normalizeCountryCode(
-        (request as NextRequest & GeoAwareRequest).geo?.country,
-    );
+    const geoCountryCode = normalizeCountryCode((request as NextRequest & GeoAwareRequest).geo?.country);
 
     if (geoCountryCode) {
         return geoCountryCode;
@@ -63,7 +61,7 @@ export function shouldEnforceGeoRestriction(): boolean {
         return false;
     }
 
-    return process.env[GEO_RESTRICTION_DISABLED_ENV] !== "true";
+    return false // process.env[GEO_RESTRICTION_DISABLED_ENV] !== "true";
 }
 
 /**
