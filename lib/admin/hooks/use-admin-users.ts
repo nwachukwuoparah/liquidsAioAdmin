@@ -55,7 +55,7 @@ export function useAdminUserTabCounts(): {
             queryFn: async () => {
                 const page = await fetchAdminUsersPage({
                     accountType,
-                    limit: 1,
+                    limit: "1",
                 });
                 return page.totalCount;
             },

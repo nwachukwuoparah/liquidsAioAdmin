@@ -43,7 +43,7 @@ export function useAdminOrderAction() {
         mutationFn: (requestBody: AdminOrderActionRequestBody) => postAdminOrderAction(requestBody),
         retry: 0,
         onSuccess: (response) => {
-            toast.success(response.message ?? "Order action queued.");
+            // toast.success(response.message ?? "Order action queued.");
             void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
             void queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
         },

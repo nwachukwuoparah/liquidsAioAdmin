@@ -54,7 +54,7 @@ export interface AdminInventoryLotsResponseBody {
 
 export interface FetchAdminInventoryLotsPageParams extends Record<string, string | undefined> {
     page?: string;
-    limit?: string | number;
+    limit?: string;
 }
 
 export interface AdminInventoryLotsMappedPage {

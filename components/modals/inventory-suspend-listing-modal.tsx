@@ -46,7 +46,7 @@ export default function InventorySuspendListingModal({
         handleSubmit,
         setError,
         formState: { errors, isValid },
-    } = useForm<InventorySuspendReasonFormValues>({
+    } = useForm<any>({
         resolver: zodResolver(inventorySuspendReasonFormSchema),
         defaultValues: { reason: "", note: "" },
         mode: "onChange",
@@ -126,7 +126,7 @@ export default function InventorySuspendListingModal({
                         )}
                     />
                     {errors.reason ? (
-                        <p className="text-sm text-[#CC2929]">{errors.reason.message}</p>
+                        <p className="text-sm text-[#CC2929]">{errors.reason.message as string}</p>
                     ) : null}
                 </div>
 
@@ -147,7 +147,7 @@ export default function InventorySuspendListingModal({
                             {...register("note")}
                         />
                         {errors.note ? (
-                            <p className="text-sm text-[#CC2929]">{errors.note.message}</p>
+                            <p className="text-sm text-[#CC2929]">{errors.note.message as string}</p>
                         ) : null}
                     </div>
                 ) : null}

@@ -43,12 +43,12 @@ export const SAMPLE_ADMIN_ORDER_STATS: AdminOrderStatRecord[] = [
     { title: "Platform Fees Earning", count: "$3,209", change: "-12%", trendDirection: "down", isPositive: false, iconKey: "handCoins", iconBg: "bg-[#DC680314]", iconColor: "text-[#DC6803]" },
 ];
 
-export const SAMPLE_ADMIN_USER_STATS: AdminUserStatRecord[] = [
-    { value: "3,598", label: "Total users", change: "+145", changeClass: "text-[#117346]", iconKey: "usersGroup", iconBg: "bg-[#009D9D14]", iconColor: "text-[#009D9D]" },
-    { value: "2,245", label: "Active buyers", change: "+23", changeClass: "text-[#117346]", iconKey: "userCheck", iconBg: "bg-[#BE02BE14]", iconColor: "text-[#BE02BE]" },
-    { value: "1,223", label: "Active sellers", change: "+89", changeClass: "text-[#117346]", iconKey: "userPlus", iconBg: "bg-[#1A1AFF14]", iconColor: "text-[#1A1AFF]" },
-    { value: "89", label: "Suspended accounts", change: "+6", changeClass: "text-[#0B0E05A3]", iconKey: "warning", iconBg: "bg-[#DC680314]", iconColor: "text-[#DC6803]" },
-];
+// export const SAMPLE_ADMIN_USER_STATS: AdminUserStatRecord[] = [
+//     { value: "3,598", label: "Total users", change: "+145", changeClass: "text-[#117346]", iconKey: "usersGroup", iconBg: "bg-[#009D9D14]", iconColor: "text-[#009D9D]" },
+//     { value: "2,245", label: "Active buyers", change: "+23", changeClass: "text-[#117346]", iconKey: "userCheck", iconBg: "bg-[#BE02BE14]", iconColor: "text-[#BE02BE]" },
+//     { value: "1,223", label: "Active sellers", change: "+89", changeClass: "text-[#117346]", iconKey: "userPlus", iconBg: "bg-[#1A1AFF14]", iconColor: "text-[#1A1AFF]" },
+//     { value: "89", label: "Suspended accounts", change: "+6", changeClass: "text-[#0B0E05A3]", iconKey: "warning", iconBg: "bg-[#DC680314]", iconColor: "text-[#DC6803]" },
+// ];
 
 export const SAMPLE_ADMIN_USER_TAB_COUNTS: AdminUserTabCounts = {
     buyers: 4,

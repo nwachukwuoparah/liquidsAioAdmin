@@ -48,7 +48,7 @@ export function AuthPhoneInput<TFieldValues extends FieldValues>({
                 control={control}
                 name={name}
                 defaultCountry={defaultCountry}
-                countries={supportedCountries}
+                countries={supportedCountries as any}
                 international
                 countryCallingCodeEditable={false}
                 disabled={disabled}

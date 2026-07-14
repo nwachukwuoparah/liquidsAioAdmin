@@ -1,21 +1,13 @@
 import { decodeJwtPayload } from "@/lib/auth/utilities/decode-jwt-payload";
 
 /** Decoded payload from an admin invite JWT. */
-export interface AdminInviteTokenPayload {
-    type?: string;
-    target?: string;
-    email?: string;
-    roleName?: string;
-    iat?: number;
-    exp?: number;
-}
 
 /**
  * Decodes the payload of an invite JWT without verifying its signature.
  * @param inviteToken - JWT from the sign-up invite link query string.
  */
-export function decodeInviteTokenPayload(inviteToken: string): AdminInviteTokenPayload | null {
-    return decodeJwtPayload<AdminInviteTokenPayload>(inviteToken);
+export function decodeInviteTokenPayload(inviteToken: string): any | null {
+    return decodeJwtPayload<any>(inviteToken);
 }
 
 /**

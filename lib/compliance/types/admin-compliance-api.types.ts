@@ -46,5 +46,5 @@ export interface AdminComplianceReviewsResponseBody {
 export interface FetchAdminComplianceReviewsPageParams extends Record<string, string | undefined> {
     cursor_id?: string;
     cursor_sort_at?: string;
-    limit?: number;
+    limit?: string;
 }

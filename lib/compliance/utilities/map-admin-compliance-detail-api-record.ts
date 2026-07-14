@@ -104,14 +104,14 @@ function resolveAssigneeName(
     const firstName =
         typeof profile.firstName === "string"
             ? profile.firstName.trim()
-            : typeof profile.first_name === "string"
-              ? profile.first_name.trim()
+            : typeof profile.firstName === "string"
+              ? profile.firstName.trim()
               : "";
     const lastName =
         typeof profile.lastName === "string"
             ? profile.lastName.trim()
-            : typeof profile.last_name === "string"
-              ? profile.last_name.trim()
+            : typeof profile.lastName === "string"
+              ? profile.lastName.trim()
               : "";
     const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
 
@@ -123,12 +123,8 @@ function resolveAssigneeName(
         return profile.email.trim();
     }
 
-    if (typeof profile.name === "string" && profile.name.trim()) {
-        return profile.name.trim();
-    }
-
     for (const nestedKey of ["admin", "assignedAdmin", "reviewer", "assignee", "user", "profile"]) {
-        const nestedProfile = profile[nestedKey];
+        const nestedProfile = profile[nestedKey as keyof typeof profile];
         const nestedName = resolveAssigneeName(
             nestedProfile as AdminComplianceAssigneeProfile | Record<string, unknown> | string | null,
         );

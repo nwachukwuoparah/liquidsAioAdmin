@@ -7,7 +7,7 @@ function normalizePagePayload(payload: AdminComplianceReviewsResponseBody): Admi
     const page = payload.data ?? payload;
 
     return {
-        results: page.results ?? page.users ?? [],
+        results: page.results ?? [],
         hasNext: page.hasNext ?? false,
         nextCursor: page.nextCursor ?? null,
     };
