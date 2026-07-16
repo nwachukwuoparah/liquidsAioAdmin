@@ -59,7 +59,7 @@ export async function fetchAdminComplianceReviewsPage(
     const page = parseAdminComplianceApiResponse(body);
 
     return {
-        results: page.results.map((record, index) => mapAdminComplianceApiRecord(record, index)),
+        results: page.users.map((record, index) => mapAdminComplianceApiRecord(record, index)),
         hasNext: page.hasNext,
         nextCursor: page.nextCursor,
     };

@@ -28,7 +28,7 @@ export interface AdminComplianceApiRecord {
 }
 
 export interface AdminComplianceReviewsPage {
-    results: AdminComplianceApiRecord[];
+    users: AdminComplianceApiRecord[];
     hasNext: boolean;
     nextCursor?: AdminComplianceApiCursor | null;
 }
@@ -37,7 +37,6 @@ export interface AdminComplianceReviewsResponseBody {
     status?: string;
     message?: string;
     data?: AdminComplianceReviewsPage;
-    results?: AdminComplianceApiRecord[];
     users?: AdminComplianceApiRecord[];
     hasNext?: boolean;
     nextCursor?: AdminComplianceApiCursor | null;

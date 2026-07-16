@@ -26,7 +26,6 @@ export async function fetchAdminInventoryLotsPage(
     params: Record<string, string> = {},
 ): Promise<AdminInventoryLotsMappedPage> {
     const { body } = await apiClient.get<unknown>(ADMIN_LOTS_PATH, params);
-    console.log("[GET /lots] raw API response:", body);
 
     const parsedPage = parseAdminInventoryLotsResponse(body, params.limit);
     const requestedPage = Math.max(1, Number(params.page) || 1);
