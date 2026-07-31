@@ -17,6 +17,7 @@ function createProxyRequest(pathname: string, countryCode?: string): NextRequest
 describe("handleAppProxy", () => {
     it("redirects unsupported regions to the unavailable page in production", () => {
         vi.stubEnv("NODE_ENV", "production");
+        vi.stubEnv("VERCEL_ENV", "production");
         vi.stubEnv("GEO_RESTRICTION_DISABLED", "false");
 
         const response = handleAppProxy(createProxyRequest("/overview", "NG"));
@@ -29,6 +30,7 @@ describe("handleAppProxy", () => {
 
     it("allows the unavailable page without redirecting again", () => {
         vi.stubEnv("NODE_ENV", "production");
+        vi.stubEnv("VERCEL_ENV", "production");
         vi.stubEnv("GEO_RESTRICTION_DISABLED", "false");
 
         const response = handleAppProxy(createProxyRequest(REGION_UNAVAILABLE_PATH, "NG"));
@@ -39,9 +41,20 @@ describe("handleAppProxy", () => {
 
     it("allows supported regions through to auth redirects", () => {
         vi.stubEnv("NODE_ENV", "production");
+        vi.stubEnv("VERCEL_ENV", "production");
         vi.stubEnv("GEO_RESTRICTION_DISABLED", "false");
 
         const response = handleAppProxy(createProxyRequest("/overview", "US"));
+
+        expect(response.status).toBe(307);
+        expect(response.headers.get("location")).toBe(`http://localhost:3000${AUTH_LOGIN_ROUTE}`);
+    });
+
+    it("does not geo-block on Vercel preview/staging", () => {
+        vi.stubEnv("NODE_ENV", "production");
+        vi.stubEnv("VERCEL_ENV", "preview");
+
+        const response = handleAppProxy(createProxyRequest("/overview", "NG"));
 
         expect(response.status).toBe(307);
         expect(response.headers.get("location")).toBe(`http://localhost:3000${AUTH_LOGIN_ROUTE}`);
