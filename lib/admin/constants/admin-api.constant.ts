@@ -29,6 +29,7 @@ export const ADMIN_INVENTORY_ACTIONS_PATH = `${ADMIN_API_BASE_PATH}/inventory/ac
 
 export const ADMIN_COMPLIANCE_REVIEWS_PATH = `/compliance`;
 export const ADMIN_COMPLIANCE_OVERVIEW_PATH = `/compliance/overview`;
+export const ADMIN_COMPLIANCE_AUDIT_LOGS_PATH = `/compliance/audit-logs`;
 export const ADMIN_COMPLIANCE_ACTIONS_PATH = `${ADMIN_API_BASE_PATH}/compliance/actions`;
 export { ADMIN_COMPLIANCE_REVIEW_PATH } from "@/lib/compliance/constants/admin-compliance-review.constant";
 

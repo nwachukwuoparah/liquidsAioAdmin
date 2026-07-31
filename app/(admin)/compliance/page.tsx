@@ -2,6 +2,7 @@
 
 import { EmptyState } from "@/components/empty-state";
 import ComplianceActionMenu from "@/components/compliance-action-menu";
+import ComplianceAuditLogs from "@/components/compliance-audit-logs";
 import ComplianceFilters, { COMPLIANCE_FILTER_BLUEPRINTS } from "@/components/compliance-filters";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import SearchInput from "@/components/search-input";
@@ -22,8 +23,9 @@ const ACTIVE_TAB_STATUS_MAP: Record<string, string | undefined> = {
     Pending: "pending",
     Approved: "approved",
     Rejected: "rejected",
-    "Audit logs": undefined,
 };
+
+const AUDIT_LOGS_TAB = "Audit logs";
 
 const COMPLIANCE_REVIEW_STATUS_LABELS: Record<string, string> = {
     pending: "Pending",
@@ -146,6 +148,7 @@ export default function ComplianceBody() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterParams, setFilterParams] = useState<Record<string, string>>({});
 
+    const isAuditLogsTab = activeTab === AUDIT_LOGS_TAB;
     const activeTabStatus = ACTIVE_TAB_STATUS_MAP[activeTab];
     const complianceQueryParams = useMemo(
         () => ({
@@ -156,7 +159,7 @@ export default function ComplianceBody() {
         [activeTabStatus, filterParams, searchQuery],
     );
 
-    const complianceReviewsQuery = useAdminComplianceReviews(complianceQueryParams);
+    const complianceReviewsQuery = useAdminComplianceReviews(complianceQueryParams, !isAuditLogsTab);
     const complianceOverviewQuery = useAdminComplianceOverview();
 
     const tableRows = useMemo(() => {
@@ -182,7 +185,7 @@ export default function ComplianceBody() {
         { name: "Pending", count: complianceOverviewStats.pending },
         { name: "Approved", count: complianceOverviewStats.approved },
         { name: "Rejected", count: complianceOverviewStats.rejected },
-        { name: "Audit logs", count: null as number | null },
+        { name: AUDIT_LOGS_TAB, count: null as number | null },
     ];
 
     const selectedComplianceFilters = useMemo<Record<string, string | undefined>>(
@@ -326,109 +329,115 @@ export default function ComplianceBody() {
                         })}
                     </div>
 
-                    <div className="flex items-center gap-2.5 p-4 border-b border-[#0B0E0514]">
-                        <SearchInput
-                            containerClassName="flex-1"
-                            value={searchQuery}
-                            onChange={(event) => setSearchQuery(event.target.value)}
-                            placeholder="Search people by email..."
-                            className="rounded-2xl py-3 focus:border-[#0B0E0514]"
-                        />
-                        <button
-                            type="button"
-                            aria-label="Open filters"
-                            className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#0B0E0514] bg-[#FFFFFF] shadow-card"
-                        >
-                            <SlidersHorizontalIcon className="h-5 w-5 text-[#343330]" />
-                            <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white shadow-card">{activeFiltersCount}</span>
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col gap-3 px-4 pb-6 pt-4">
-                        <AdminAsyncContent
-                            isLoading={complianceReviewsQuery.isLoading}
-                            isEmpty={tableRows.length === 0}
-                            loadingFallback={<ListRowsSkeleton rows={5} />}
-                            emptyFallback={<EmptyState title="No compliance reviews found" />}
-                        >
-                            {tableRows.map((row) => (
-                                <div
-                                    key={row.id}
-                                    className={`p-4 ${LIST_CARD_CLASS} rounded-xl`}
+                    {isAuditLogsTab ? (
+                        <ComplianceAuditLogs />
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-2.5 p-4 border-b border-[#0B0E0514]">
+                                <SearchInput
+                                    containerClassName="flex-1"
+                                    value={searchQuery}
+                                    onChange={(event) => setSearchQuery(event.target.value)}
+                                    placeholder="Search people by email..."
+                                    className="rounded-2xl py-3 focus:border-[#0B0E0514]"
+                                />
+                                <button
+                                    type="button"
+                                    aria-label="Open filters"
+                                    className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#0B0E0514] bg-[#FFFFFF] shadow-card"
                                 >
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-start gap-3">
-                                            <ProfileAvatar
-                                                name={getProfileName(row)}
-                                                email={row.email}
-                                                imageUrl={row.avatarUrl}
-                                                size="lg"
-                                            />
+                                    <SlidersHorizontalIcon className="h-5 w-5 text-[#343330]" />
+                                    <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white shadow-card">{activeFiltersCount}</span>
+                                </button>
+                            </div>
 
-                                            <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
-                                                <div className="flex flex-col min-w-0 space-y-1">
-                                                    <Typography
-                                                        type="text16"
-                                                        fontWeight={700}
-                                                        className="!text-[#0B0E05] leading-tight"
-                                                    >
-                                                        {row.name}
-                                                    </Typography>
-                                                    <Typography
-                                                        type="text12"
-                                                        fontWeight={600}
-                                                        className={`uppercase tracking-[0.04em] ${getAccountTypeTextColor(row.accountType)}`}
-                                                    >
-                                                        {formatAccountTypeLabel(row.accountType)}
-                                                    </Typography>
+                            <div className="flex flex-col gap-3 px-4 pb-6 pt-4">
+                                <AdminAsyncContent
+                                    isLoading={complianceReviewsQuery.isLoading}
+                                    isEmpty={tableRows.length === 0}
+                                    loadingFallback={<ListRowsSkeleton rows={5} />}
+                                    emptyFallback={<EmptyState title="No compliance reviews found" />}
+                                >
+                                    {tableRows.map((row) => (
+                                        <div
+                                            key={row.id}
+                                            className={`p-4 ${LIST_CARD_CLASS} rounded-xl`}
+                                        >
+                                            <div className="flex flex-col gap-3">
+                                                <div className="flex items-start gap-3">
+                                                    <ProfileAvatar
+                                                        name={getProfileName(row)}
+                                                        email={row.email}
+                                                        imageUrl={row.avatarUrl}
+                                                        size="lg"
+                                                    />
+
+                                                    <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                                                        <div className="flex flex-col min-w-0 space-y-1">
+                                                            <Typography
+                                                                type="text16"
+                                                                fontWeight={700}
+                                                                className="!text-[#0B0E05] leading-tight"
+                                                            >
+                                                                {row.name}
+                                                            </Typography>
+                                                            <Typography
+                                                                type="text12"
+                                                                fontWeight={600}
+                                                                className={`uppercase tracking-[0.04em] ${getAccountTypeTextColor(row.accountType)}`}
+                                                            >
+                                                                {formatAccountTypeLabel(row.accountType)}
+                                                            </Typography>
+                                                        </div>
+
+                                                        <span
+                                                            className={`shrink-0 rounded-full px-2.5 py-1 ${getReviewStatusBg(row.reviewStatus)}`}
+                                                        >
+                                                            <Typography
+                                                                type="text12"
+                                                                fontWeight={600}
+                                                                className={getReviewStatusTextColor(row.reviewStatus)}
+                                                            >
+                                                                {formatReviewStatusLabel(row.reviewStatus)}
+                                                            </Typography>
+                                                        </span>
+                                                    </div>
                                                 </div>
 
-                                                <span
-                                                    className={`shrink-0 rounded-full px-2.5 py-1 ${getReviewStatusBg(row.reviewStatus)}`}
-                                                >
+                                                <div className="flex items-center justify-between gap-3">
                                                     <Typography
                                                         type="text12"
-                                                        fontWeight={600}
-                                                        className={getReviewStatusTextColor(row.reviewStatus)}
+                                                        fontWeight={400}
+                                                        className="min-w-0 !text-[#0B0E05A3]"
                                                     >
-                                                        {formatReviewStatusLabel(row.reviewStatus)}
+                                                        Assigned to:{" "}
+                                                        <span className="font-semibold !text-[#0B0E05]">
+                                                            {row.assignedTo}
+                                                        </span>
                                                     </Typography>
-                                                </span>
+                                                    <Typography
+                                                        type="text12"
+                                                        fontWeight={500}
+                                                        className="shrink-0 whitespace-nowrap !text-[#0B0E05]"
+                                                    >
+                                                        {row.dateSubmitted}
+                                                    </Typography>
+                                                </div>
                                             </div>
                                         </div>
+                                    ))}
+                                </AdminAsyncContent>
+                            </div>
 
-                                        <div className="flex items-center justify-between gap-3">
-                                            <Typography
-                                                type="text12"
-                                                fontWeight={400}
-                                                className="min-w-0 !text-[#0B0E05A3]"
-                                            >
-                                                Assigned to:{" "}
-                                                <span className="font-semibold !text-[#0B0E05]">
-                                                    {row.assignedTo}
-                                                </span>
-                                            </Typography>
-                                            <Typography
-                                                type="text12"
-                                                fontWeight={500}
-                                                className="shrink-0 whitespace-nowrap !text-[#0B0E05]"
-                                            >
-                                                {row.dateSubmitted}
-                                            </Typography>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </AdminAsyncContent>
-                    </div>
-
-                    {!complianceReviewsQuery.isLoading && tableRows.length > 0 ? (
-                        <ComplianceLoadMoreButton
-                            hasNext={hasNextPage}
-                            isLoading={complianceReviewsQuery.isFetchingNextPage}
-                            onClick={handleLoadMore}
-                        />
-                    ) : null}
+                            {!complianceReviewsQuery.isLoading && tableRows.length > 0 ? (
+                                <ComplianceLoadMoreButton
+                                    hasNext={hasNextPage}
+                                    isLoading={complianceReviewsQuery.isFetchingNextPage}
+                                    onClick={handleLoadMore}
+                                />
+                            ) : null}
+                        </>
+                    )}
                 </div>
 
                 <div className={`hidden pt-2 md:block ${PANEL_CARD_SHELL_CLASS}`}>
@@ -460,135 +469,141 @@ export default function ComplianceBody() {
                             })}
                         </div>
 
-                        <div className="p-6 border-b border-[#0B0E0514]">
-                            <div className={`p-4 ${SECTION_CARD_CLASS}`}>
-                                <ComplianceFilters
-                                    searchQuery={searchQuery}
-                                    onSearchChange={setSearchQuery}
-                                    filters={COMPLIANCE_FILTER_BLUEPRINTS}
-                                    selectedValues={selectedComplianceFilters}
-                                    onFilterChange={handleComplianceFilterChange}
-                                />
-                            </div>
-                        </div>
+                        {isAuditLogsTab ? (
+                            <ComplianceAuditLogs />
+                        ) : (
+                            <>
+                                <div className="p-6 border-b border-[#0B0E0514]">
+                                    <div className={`p-4 ${SECTION_CARD_CLASS}`}>
+                                        <ComplianceFilters
+                                            searchQuery={searchQuery}
+                                            onSearchChange={setSearchQuery}
+                                            filters={COMPLIANCE_FILTER_BLUEPRINTS}
+                                            selectedValues={selectedComplianceFilters}
+                                            onFilterChange={handleComplianceFilterChange}
+                                        />
+                                    </div>
+                                </div>
 
-                        <div className="w-full overflow-x-auto scrollbar-thin">
-                            <table className="w-full min-w-[960px] border-collapse text-left">
-                                <thead>
-                                    <tr className="border-b border-[#0B0E0514] bg-[#0B0E050A]">
-                                        {["S/N", "User", "Account type", "Date submitted", "Assigned to", "Review status", ""].map((head, index) => (
-                                            <th key={index} className="px-6 py-4.5">
-                                                <Typography type="text14" fontWeight={600} className="text-slate-700 whitespace-nowrap">
-                                                    {head}
-                                                </Typography>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-
-                                <tbody className="divide-y divide-[#0B0E0529]">
-                                    <AdminAsyncContent
-                                        isLoading={complianceReviewsQuery.isLoading}
-                                        isEmpty={tableRows.length === 0}
-                                        loadingFallback={
-                                            <tr>
-                                                <td colSpan={7}>
-                                                    <DataTableSkeleton rows={6} columns={7} />
-                                                </td>
-                                            </tr>
-                                        }
-                                        emptyFallback={
-                                            <tr>
-                                                <td colSpan={7}>
-                                                    <EmptyState title="No compliance reviews found" />
-                                                </td>
-                                            </tr>
-                                        }
-                                    >
-                                        {tableRows.map((row, index, array) => {
-                                            const isNearBottom = index >= array.length - 2;
-
-                                            return (
-                                                <tr key={row.id} className="hover:bg-[#0B0E050A] transition-colors">
-                                                    <td className="px-6 py-4.5 w-12">
-                                                        <Typography type="text14" fontWeight={700} className="text-slate-900">{row.sn}</Typography>
-                                                    </td>
-
-                                                    <td className="px-6 py-4.5">
-                                                        <div className="flex items-center gap-3">
-                                                            <ProfileAvatar
-                                                                name={getProfileName(row)}
-                                                                email={row.email}
-                                                                imageUrl={row.avatarUrl}
-                                                                size="sm"
-                                                            />
-                                                            <Typography type="text14" fontWeight={600} className="text-slate-800 whitespace-nowrap">
-                                                                {row.name}
-                                                            </Typography>
-                                                        </div>
-                                                    </td>
-
-                                                    <td className="px-6 py-4.5">
-                                                        <span className={`inline-block rounded-md px-2.5 py-0.5 ${getAccountTypeBg(row.accountType)}`}>
-                                                            <Typography
-                                                                type="text12"
-                                                                fontWeight={600}
-                                                                className={getAccountTypeTextColor(row.accountType)}
-                                                            >
-                                                                {row.accountType}
-                                                            </Typography>
-                                                        </span>
-                                                    </td>
-
-                                                    <td className="px-6 py-4.5">
-                                                        <Typography type="text14" fontWeight={500} className="text-slate-600 whitespace-nowrap">
-                                                            {row.dateSubmitted}
+                                <div className="w-full overflow-x-auto scrollbar-thin">
+                                    <table className="w-full min-w-[960px] border-collapse text-left">
+                                        <thead>
+                                            <tr className="border-b border-[#0B0E0514] bg-[#0B0E050A]">
+                                                {["S/N", "User", "Account type", "Date submitted", "Assigned to", "Review status", ""].map((head, index) => (
+                                                    <th key={index} className="px-6 py-4.5">
+                                                        <Typography type="text14" fontWeight={600} className="text-slate-700 whitespace-nowrap">
+                                                            {head}
                                                         </Typography>
-                                                    </td>
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
 
-                                                    <td className="px-6 py-4.5">
-                                                        <Typography type="text14" fontWeight={500} className="text-slate-600 whitespace-nowrap">
-                                                            {row.assignedTo}
-                                                        </Typography>
-                                                    </td>
+                                        <tbody className="divide-y divide-[#0B0E0529]">
+                                            <AdminAsyncContent
+                                                isLoading={complianceReviewsQuery.isLoading}
+                                                isEmpty={tableRows.length === 0}
+                                                loadingFallback={
+                                                    <tr>
+                                                        <td colSpan={7}>
+                                                            <DataTableSkeleton rows={6} columns={7} />
+                                                        </td>
+                                                    </tr>
+                                                }
+                                                emptyFallback={
+                                                    <tr>
+                                                        <td colSpan={7}>
+                                                            <EmptyState title="No compliance reviews found" />
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            >
+                                                {tableRows.map((row, index, array) => {
+                                                    const isNearBottom = index >= array.length - 2;
 
-                                                    <td className="px-6 py-4.5">
-                                                        <span className={`inline-block rounded-md px-2.5 py-0.5 ${getReviewStatusBg(row.reviewStatus)}`}>
-                                                            <Typography
-                                                                type="text12"
-                                                                fontWeight={600}
-                                                                className={getReviewStatusTextColor(row.reviewStatus)}
-                                                            >
-                                                                {formatReviewStatusLabel(row.reviewStatus)}
-                                                            </Typography>
-                                                        </span>
-                                                    </td>
+                                                    return (
+                                                        <tr key={row.id} className="hover:bg-[#0B0E050A] transition-colors">
+                                                            <td className="px-6 py-4.5 w-12">
+                                                                <Typography type="text14" fontWeight={700} className="text-slate-900">{row.sn}</Typography>
+                                                            </td>
 
-                                                    <td className="relative w-16 px-6 py-4.5 text-right">
-                                                        <ComplianceActionMenu
-                                                            userId={row.id}
-                                                            accountType={row.accountType}
-                                                            isOpen={openActionId === row.id}
-                                                            onToggle={() => setOpenActionId(openActionId === row.id ? null : row.id)}
-                                                            onClose={() => setOpenActionId(null)}
-                                                            placement={isNearBottom ? "bottom" : "top"}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </AdminAsyncContent>
-                                </tbody>
-                            </table>
-                        </div>
+                                                            <td className="px-6 py-4.5">
+                                                                <div className="flex items-center gap-3">
+                                                                    <ProfileAvatar
+                                                                        name={getProfileName(row)}
+                                                                        email={row.email}
+                                                                        imageUrl={row.avatarUrl}
+                                                                        size="sm"
+                                                                    />
+                                                                    <Typography type="text14" fontWeight={600} className="text-slate-800 whitespace-nowrap">
+                                                                        {row.name}
+                                                                    </Typography>
+                                                                </div>
+                                                            </td>
 
-                        {!complianceReviewsQuery.isLoading && tableRows.length > 0 ? (
-                            <ComplianceLoadMoreButton
-                                hasNext={hasNextPage}
-                                isLoading={complianceReviewsQuery.isFetchingNextPage}
-                                onClick={handleLoadMore}
-                            />
-                        ) : null}
+                                                            <td className="px-6 py-4.5">
+                                                                <span className={`inline-block rounded-md px-2.5 py-0.5 ${getAccountTypeBg(row.accountType)}`}>
+                                                                    <Typography
+                                                                        type="text12"
+                                                                        fontWeight={600}
+                                                                        className={getAccountTypeTextColor(row.accountType)}
+                                                                    >
+                                                                        {row.accountType}
+                                                                    </Typography>
+                                                                </span>
+                                                            </td>
+
+                                                            <td className="px-6 py-4.5">
+                                                                <Typography type="text14" fontWeight={500} className="text-slate-600 whitespace-nowrap">
+                                                                    {row.dateSubmitted}
+                                                                </Typography>
+                                                            </td>
+
+                                                            <td className="px-6 py-4.5">
+                                                                <Typography type="text14" fontWeight={500} className="text-slate-600 whitespace-nowrap">
+                                                                    {row.assignedTo}
+                                                                </Typography>
+                                                            </td>
+
+                                                            <td className="px-6 py-4.5">
+                                                                <span className={`inline-block rounded-md px-2.5 py-0.5 ${getReviewStatusBg(row.reviewStatus)}`}>
+                                                                    <Typography
+                                                                        type="text12"
+                                                                        fontWeight={600}
+                                                                        className={getReviewStatusTextColor(row.reviewStatus)}
+                                                                    >
+                                                                        {formatReviewStatusLabel(row.reviewStatus)}
+                                                                    </Typography>
+                                                                </span>
+                                                            </td>
+
+                                                            <td className="relative w-16 px-6 py-4.5 text-right">
+                                                                <ComplianceActionMenu
+                                                                    userId={row.id}
+                                                                    accountType={row.accountType}
+                                                                    isOpen={openActionId === row.id}
+                                                                    onToggle={() => setOpenActionId(openActionId === row.id ? null : row.id)}
+                                                                    onClose={() => setOpenActionId(null)}
+                                                                    placement={isNearBottom ? "bottom" : "top"}
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </AdminAsyncContent>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {!complianceReviewsQuery.isLoading && tableRows.length > 0 ? (
+                                    <ComplianceLoadMoreButton
+                                        hasNext={hasNextPage}
+                                        isLoading={complianceReviewsQuery.isFetchingNextPage}
+                                        onClick={handleLoadMore}
+                                    />
+                                ) : null}
+                            </>
+                        )}
 
                     </div>
                 </div>

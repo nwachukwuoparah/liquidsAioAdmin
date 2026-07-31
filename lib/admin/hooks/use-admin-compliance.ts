@@ -9,6 +9,7 @@ import {
 import type { AdminComplianceActionRequestBody } from "@/lib/admin/types/admin-api.types";
 import {
     fetchAdminComplianceReviewsPage,
+    fetchAdminComplianceAuditLogsPage,
     fetchAdminComplianceDetail,
     postAdminComplianceActionRequest,
     postAdminComplianceAssignee,
@@ -51,7 +52,10 @@ function patchComplianceDetailAssignee(
 }
 
 /** Loads cursor-paginated compliance review queue rows. */
-export function useAdminComplianceReviews(filterParams: Record<string, string> = {}) {
+export function useAdminComplianceReviews(
+    filterParams: Record<string, string> = {},
+    enabled = true,
+) {
     return useInfiniteQuery({
         queryKey: ["admin-compliance-reviews", filterParams],
         queryFn: ({ pageParam }) =>
@@ -63,6 +67,27 @@ export function useAdminComplianceReviews(filterParams: Record<string, string> =
         getNextPageParam: (lastPage) =>
             lastPage.hasNext && lastPage.nextCursor ? lastPage.nextCursor : undefined,
         ...QueryConfig.DEFAULT,
+        enabled,
+    });
+}
+
+/** Loads cursor-paginated compliance audit trail rows. */
+export function useAdminComplianceAuditLogs(
+    filterParams: Record<string, string> = {},
+    enabled = true,
+) {
+    return useInfiniteQuery({
+        queryKey: ["admin-compliance-audit-logs", filterParams],
+        queryFn: ({ pageParam }) =>
+            fetchAdminComplianceAuditLogsPage({
+                ...filterParams,
+                ...(pageParam as AdminComplianceApiCursor),
+            }),
+        initialPageParam: {} as AdminComplianceApiCursor,
+        getNextPageParam: (lastPage) =>
+            lastPage.hasNext && lastPage.nextCursor ? lastPage.nextCursor : undefined,
+        ...QueryConfig.DEFAULT,
+        enabled,
     });
 }
 

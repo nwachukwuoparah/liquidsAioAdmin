@@ -1,5 +1,6 @@
 import {
     ADMIN_COMPLIANCE_ACTIONS_PATH,
+    ADMIN_COMPLIANCE_AUDIT_LOGS_PATH,
     ADMIN_COMPLIANCE_REVIEWS_PATH,
     ADMIN_COMPLIANCE_REVIEW_PATH,
     getAdminComplianceAssignPath,
@@ -8,19 +9,26 @@ import {
     getAdminComplianceUnclaimPath,
 } from "@/lib/admin/constants/admin-api.constant";
 import { ADMIN_COMPLIANCE_DEFAULT_PAGE_LIMIT } from "@/lib/compliance/constants/admin-compliance-api.constant";
+import { ADMIN_COMPLIANCE_AUDIT_DEFAULT_PAGE_LIMIT } from "@/lib/compliance/constants/admin-compliance-audit.constant";
 import type {
     AdminComplianceAssignRequestBody,
     AdminComplianceDetailRecord,
     AdminComplianceDetailResponseBody,
 } from "@/lib/compliance/types/admin-compliance-detail.types";
 import type {
-    AdminComplianceReviewsPage,
     AdminComplianceReviewsResponseBody,
     FetchAdminComplianceReviewsPageParams,
 } from "@/lib/compliance/types/admin-compliance-api.types";
+import type {
+    AdminComplianceAuditLogRecord,
+    AdminComplianceAuditLogsResponseBody,
+    FetchAdminComplianceAuditLogsPageParams,
+} from "@/lib/compliance/types/admin-compliance-audit.types";
 import { parseAdminComplianceDetailResponse } from "@/lib/compliance/utilities/parse-admin-compliance-detail-response";
 import { mapAdminComplianceApiRecord } from "@/lib/compliance/utilities/map-admin-compliance-api-record";
+import { mapAdminComplianceAuditLogRecord } from "@/lib/compliance/utilities/map-admin-compliance-audit-record";
 import { parseAdminComplianceApiResponse } from "@/lib/compliance/utilities/parse-admin-compliance-api-response";
+import { parseAdminComplianceAuditLogsResponse } from "@/lib/compliance/utilities/parse-admin-compliance-audit-response";
 import type { AdminComplianceReviewRecord } from "@/lib/admin/types/admin-api.types";
 import type { AdminComplianceActionRequestBody } from "@/lib/admin/types/admin-api.types";
 import type { ComplianceReviewMutationVariables } from "@/lib/compliance/types/admin-compliance-review.types";
@@ -47,6 +55,26 @@ export interface AdminComplianceReviewsMappedPage {
     nextCursor?: { cursor_id?: string; cursor_sort_at?: string } | null;
 }
 
+export interface AdminComplianceAuditLogsMappedPage {
+    results: AdminComplianceAuditLogRecord[];
+    hasNext: boolean;
+    nextCursor?: { cursor_id?: string; cursor_sort_at?: string } | null;
+}
+
+function buildAdminComplianceAuditQueryParams({
+    limit = ADMIN_COMPLIANCE_AUDIT_DEFAULT_PAGE_LIMIT,
+    cursor_id,
+    cursor_sort_at,
+    ...filters
+}: FetchAdminComplianceAuditLogsPageParams): Record<string, string | undefined> {
+    return {
+        ...filters,
+        limit: String(limit),
+        cursor_id,
+        cursor_sort_at,
+    };
+}
+
 /** Fetches a cursor-paginated compliance review page. */
 export async function fetchAdminComplianceReviewsPage(
     params: FetchAdminComplianceReviewsPageParams = {},
@@ -60,6 +88,24 @@ export async function fetchAdminComplianceReviewsPage(
 
     return {
         results: page.users.map((record, index) => mapAdminComplianceApiRecord(record, index)),
+        hasNext: page.hasNext,
+        nextCursor: page.nextCursor,
+    };
+}
+
+/** Fetches a cursor-paginated compliance audit trail page. */
+export async function fetchAdminComplianceAuditLogsPage(
+    params: FetchAdminComplianceAuditLogsPageParams = {},
+): Promise<AdminComplianceAuditLogsMappedPage> {
+    const { body } = await apiClient.get<AdminComplianceAuditLogsResponseBody>(
+        ADMIN_COMPLIANCE_AUDIT_LOGS_PATH,
+        buildAdminComplianceAuditQueryParams(params),
+    );
+
+    const page = parseAdminComplianceAuditLogsResponse(body);
+
+    return {
+        results: page.auditLogs.map((record, index) => mapAdminComplianceAuditLogRecord(record, index)),
         hasNext: page.hasNext,
         nextCursor: page.nextCursor,
     };

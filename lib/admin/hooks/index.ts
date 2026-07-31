@@ -1,6 +1,7 @@
 export {
     useAdminComplianceAction,
     useAdminComplianceReviews,
+    useAdminComplianceAuditLogs,
     useAdminComplianceOverview,
     useAdminComplianceDetail,
     useAdminComplianceAssignee,
