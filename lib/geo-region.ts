@@ -2,11 +2,12 @@ import type { NextRequest } from "next/server";
 import {
     CLOUDFLARE_IP_COUNTRY_HEADER,
     CLOUDFRONT_VIEWER_COUNTRY_HEADER,
-    GEO_RESTRICTION_DISABLED_ENV,
+    // TODO(prod): restore when re-enabling shouldEnforceGeoRestriction
+    // GEO_RESTRICTION_DISABLED_ENV,
     SUPPORTED_COUNTRY_CODE,
-    VERCEL_ENV_NAME,
+    // VERCEL_ENV_NAME,
     VERCEL_IP_COUNTRY_HEADER,
-    VERCEL_PRODUCTION_ENV,
+    // VERCEL_PRODUCTION_ENV,
 } from "@/lib/constants/supported-region.constant";
 
 const REQUEST_COUNTRY_HEADER_KEYS = [
@@ -57,24 +58,26 @@ export function resolveRequestCountryCode(request: NextRequest): string | null {
 
 /**
  * Returns whether geo restriction should run for the current deployment.
- * Enforced only on Vercel production (not local, preview, or staging).
+ * TODO(prod): uncomment the body below and remove the early `return false`.
  */
 export function shouldEnforceGeoRestriction(): boolean {
-    if (process.env[GEO_RESTRICTION_DISABLED_ENV] === "true") {
-        return false;
-    }
+    return false;
 
-    if (process.env.NODE_ENV !== "production") {
-        return false;
-    }
-
-    const vercelEnv = process.env[VERCEL_ENV_NAME];
-
-    if (vercelEnv && vercelEnv !== VERCEL_PRODUCTION_ENV) {
-        return false;
-    }
-
-    return true;
+    // if (process.env[GEO_RESTRICTION_DISABLED_ENV] === "true") {
+    //     return false;
+    // }
+    //
+    // if (process.env.NODE_ENV !== "production") {
+    //     return false;
+    // }
+    //
+    // const vercelEnv = process.env[VERCEL_ENV_NAME];
+    //
+    // if (vercelEnv && vercelEnv !== VERCEL_PRODUCTION_ENV) {
+    //     return false;
+    // }
+    //
+    // return true;
 }
 
 /**

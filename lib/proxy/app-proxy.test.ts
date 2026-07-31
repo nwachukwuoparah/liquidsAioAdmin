@@ -15,7 +15,8 @@ function createProxyRequest(pathname: string, countryCode?: string): NextRequest
 }
 
 describe("handleAppProxy", () => {
-    it("redirects unsupported regions to the unavailable page in production", () => {
+    // TODO: unskip when geo restriction is re-enabled for production
+    it.skip("redirects unsupported regions to the unavailable page in production", () => {
         vi.stubEnv("NODE_ENV", "production");
         vi.stubEnv("VERCEL_ENV", "production");
         vi.stubEnv("GEO_RESTRICTION_DISABLED", "false");
@@ -28,7 +29,8 @@ describe("handleAppProxy", () => {
         );
     });
 
-    it("allows the unavailable page without redirecting again", () => {
+    // TODO: unskip when geo restriction is re-enabled for production
+    it.skip("allows the unavailable page without redirecting again", () => {
         vi.stubEnv("NODE_ENV", "production");
         vi.stubEnv("VERCEL_ENV", "production");
         vi.stubEnv("GEO_RESTRICTION_DISABLED", "false");
