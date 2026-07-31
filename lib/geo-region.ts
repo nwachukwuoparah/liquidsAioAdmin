@@ -4,7 +4,9 @@ import {
     CLOUDFRONT_VIEWER_COUNTRY_HEADER,
     GEO_RESTRICTION_DISABLED_ENV,
     SUPPORTED_COUNTRY_CODE,
+    VERCEL_ENV_NAME,
     VERCEL_IP_COUNTRY_HEADER,
+    VERCEL_PRODUCTION_ENV,
 } from "@/lib/constants/supported-region.constant";
 
 const REQUEST_COUNTRY_HEADER_KEYS = [
@@ -55,13 +57,24 @@ export function resolveRequestCountryCode(request: NextRequest): string | null {
 
 /**
  * Returns whether geo restriction should run for the current deployment.
+ * Enforced only on Vercel production (not local, preview, or staging).
  */
 export function shouldEnforceGeoRestriction(): boolean {
+    if (process.env[GEO_RESTRICTION_DISABLED_ENV] === "true") {
+        return false;
+    }
+
     if (process.env.NODE_ENV !== "production") {
         return false;
     }
 
-    return false // process.env[GEO_RESTRICTION_DISABLED_ENV] !== "true";
+    const vercelEnv = process.env[VERCEL_ENV_NAME];
+
+    if (vercelEnv && vercelEnv !== VERCEL_PRODUCTION_ENV) {
+        return false;
+    }
+
+    return true;
 }
 
 /**

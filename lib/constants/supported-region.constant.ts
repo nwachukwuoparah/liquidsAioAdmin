@@ -15,3 +15,9 @@ export const CLOUDFRONT_VIEWER_COUNTRY_HEADER = "cloudfront-viewer-country";
 
 /** Environment flag that disables geo restriction checks in production. */
 export const GEO_RESTRICTION_DISABLED_ENV = "GEO_RESTRICTION_DISABLED";
+
+/** Vercel system env for the deployment target (`production` | `preview` | `development`). */
+export const VERCEL_ENV_NAME = "VERCEL_ENV";
+
+/** Vercel deployment target where geo restriction is enforced. */
+export const VERCEL_PRODUCTION_ENV = "production";
