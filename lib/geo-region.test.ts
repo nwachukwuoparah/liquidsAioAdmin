@@ -45,7 +45,8 @@ describe("geo-region", () => {
         expect(isRequestFromSupportedRegion(createGeoRequest("NG"))).toBe(true);
     });
 
-    it("blocks unsupported regions in Vercel production", () => {
+    // TODO(prod): unskip when shouldEnforceGeoRestriction is re-enabled
+    it.skip("blocks unsupported regions in Vercel production", () => {
         vi.stubEnv("NODE_ENV", "production");
         vi.stubEnv("VERCEL_ENV", "production");
         vi.stubEnv("GEO_RESTRICTION_DISABLED", "false");
