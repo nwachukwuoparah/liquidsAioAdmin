@@ -1,5 +1,5 @@
-/** Base z-index for the first modal layer. */
-export const MODAL_BASE_Z_INDEX = 50;
+/** Base z-index for the first modal layer (above sticky header / bottom nav at z-50). */
+export const MODAL_BASE_Z_INDEX = 1000;
 
 /** Z-index increment between stacked modal layers. */
 export const MODAL_STACK_Z_INDEX_STEP = 10;

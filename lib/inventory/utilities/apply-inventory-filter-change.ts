@@ -4,6 +4,7 @@ import {
     INVENTORY_PRICE_RANGE_BOUNDS,
     INVENTORY_STATUS_LABEL_TO_REVIEW_STATUS,
 } from "@/lib/inventory/constants/admin-inventory-api.constant";
+import { resolveCustomPriceRangeBounds } from "@/lib/filters/custom-price-range";
 import { resolveInventoryDateRange } from "@/lib/inventory/utilities/inventory-filter-params";
 
 const DEFAULT_FILTER_VALUES = new Set([
@@ -64,7 +65,8 @@ export function applyInventoryFilterChange(
 
         if (!isDefaultValue) {
             updatedParams.priceRange = value;
-            const bounds = INVENTORY_PRICE_RANGE_BOUNDS[value];
+            const customBounds = resolveCustomPriceRangeBounds(value);
+            const bounds = customBounds ?? INVENTORY_PRICE_RANGE_BOUNDS[value];
 
             if (bounds) {
                 updatedParams.min_price = bounds.min_price;

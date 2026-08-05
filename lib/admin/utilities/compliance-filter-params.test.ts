@@ -16,6 +16,26 @@ describe("resolveComplianceDateRange", () => {
         expect(range.end).toBeTruthy();
         expect(new Date(range.start!).getTime()).toBeLessThanOrEqual(new Date(range.end!).getTime());
     });
+
+    it("returns start and end timestamps for an encoded custom range", () => {
+        const range = resolveComplianceDateRange("custom:2026-01-01:2026-01-31");
+
+        expect(range.start).toBe(new Date(2026, 0, 1, 0, 0, 0, 0).toISOString());
+        expect(range.end).toBe(new Date(2026, 0, 31, 23, 59, 59, 999).toISOString());
+    });
+
+    it("returns start and end timestamps for last 7 and last 90 day presets", () => {
+        const lastSevenDays = resolveComplianceDateRange("Last 7 days");
+        const lastNinetyDays = resolveComplianceDateRange("Last 90 days");
+
+        expect(lastSevenDays.start).toBeTruthy();
+        expect(lastSevenDays.end).toBeTruthy();
+        expect(lastNinetyDays.start).toBeTruthy();
+        expect(lastNinetyDays.end).toBeTruthy();
+        expect(new Date(lastSevenDays.start!).getTime()).toBeGreaterThan(
+            new Date(lastNinetyDays.start!).getTime(),
+        );
+    });
 });
 
 describe("buildComplianceReviewQueryParams", () => {

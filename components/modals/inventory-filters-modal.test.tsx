@@ -79,7 +79,9 @@ describe("InventoryFiltersModal", () => {
         fireEvent.change(screen.getByLabelText("Categories"), {
             target: { value: "Electronics" },
         });
-        fireEvent.click(screen.getByRole("button", { name: "$0 - $500" }));
+        fireEvent.change(screen.getByLabelText("Price range"), {
+            target: { value: "$0 - $500" },
+        });
         fireEvent.click(screen.getByRole("button", { name: "Pending approval" }));
         fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
 

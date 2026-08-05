@@ -4,8 +4,23 @@ import { FloatingMenuPortal } from "@/components/floating-menu-portal";
 import SearchInput from "@/components/search-input";
 import Typography from "@/components/typography";
 import { ChevronDownIcon } from "@/components/vector";
+import {
+    CUSTOM_DATE_RANGE_OPTION,
+    encodeCustomDateRange,
+    formatCustomDateRangeLabel,
+    isCustomDateRangeValue,
+    parseCustomDateRange,
+} from "@/lib/filters/custom-date-range";
+import {
+    CUSTOM_PRICE_RANGE_OPTION,
+    encodeCustomPriceRange,
+    formatCustomPriceRangeLabel,
+    isCustomPriceRangeValue,
+    parseCustomPriceRange,
+} from "@/lib/filters/custom-price-range";
+import { useGooglePlacesAutocomplete } from "@/lib/hooks/use-google-places-autocomplete";
 import { useFloatingMenu, type FloatingMenuPlacement } from "@/lib/hooks/use-floating-menu";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 
 export interface CustomDropdownOption {
     value: string;
@@ -13,6 +28,7 @@ export interface CustomDropdownOption {
 }
 
 export type CustomDropdownVariant = "filter-pill" | "form-field" | "compact";
+export type CustomRangeKind = "date" | "price";
 
 export interface CustomDropdownProps {
     /** Current selected option value. */
@@ -40,6 +56,13 @@ export interface CustomDropdownProps {
     defaultValue?: string;
     /** Enables search inside the dropdown menu. */
     isSearchable?: boolean;
+    /** Uses Google Places predictions for the searchable location list. */
+    isPlacesAutocomplete?: boolean;
+    /**
+     * When options include "Custom range", chooses date or price inputs.
+     * Defaults to date.
+     */
+    customRangeKind?: CustomRangeKind;
     /** Placeholder for the searchable dropdown input. */
     searchPlaceholder?: string;
     /** Optional id for the trigger button. */
@@ -70,6 +93,8 @@ export function CustomDropdown({
     filterIcon,
     defaultValue,
     isSearchable = false,
+    isPlacesAutocomplete = false,
+    customRangeKind = "date",
     searchPlaceholder = "Search...",
     id,
     ariaLabel,
@@ -81,8 +106,25 @@ export function CustomDropdown({
     const triggerId = id ?? generatedId;
     const isFilterPill = variant === "filter-pill";
     const isCompact = variant === "compact";
+    const isSearchEnabled = isSearchable || isPlacesAutocomplete;
+    const isPriceCustomRange = customRangeKind === "price";
+    const customRangeOption = isPriceCustomRange
+        ? CUSTOM_PRICE_RANGE_OPTION
+        : CUSTOM_DATE_RANGE_OPTION;
+    const supportsCustomRange = options.some((option) => option.value === customRangeOption);
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [isCustomRangePanelOpen, setIsCustomRangePanelOpen] = useState(false);
+    const [customStartDate, setCustomStartDate] = useState("");
+    const [customEndDate, setCustomEndDate] = useState("");
+    const [customMinPrice, setCustomMinPrice] = useState("");
+    const [customMaxPrice, setCustomMaxPrice] = useState("");
+    const [customRangeError, setCustomRangeError] = useState<string | null>(null);
+    const {
+        predictions: placePredictions,
+        isLoading: isPlacesLoading,
+        errorMessage: placesErrorMessage,
+    } = useGooglePlacesAutocomplete(searchTerm, isOpen && isPlacesAutocomplete);
     const { triggerRef, menuRef, menuStyle, isMounted } = useFloatingMenu({
         isOpen,
         onClose: () => setIsOpen(false),
@@ -92,26 +134,128 @@ export function CustomDropdown({
     });
 
     const selectedOption = options.find((option) => option.value === value);
-    const selectedLabel = selectedOption?.label ?? value;
+    const selectedLabel = isCustomPriceRangeValue(value)
+        ? formatCustomPriceRangeLabel(value)
+        : isCustomDateRangeValue(value)
+          ? formatCustomDateRangeLabel(value)
+          : (selectedOption?.label ?? value);
     const isActive = isFilterPill && defaultValue !== undefined && value !== defaultValue;
+    const isCustomRangeSelected = isPriceCustomRange
+        ? isCustomPriceRangeValue(value)
+        : isCustomDateRangeValue(value);
 
     useEffect(() => {
         if (!isOpen) {
             setSearchTerm("");
+            setIsCustomRangePanelOpen(false);
+            setCustomRangeError(null);
+            return;
         }
-    }, [isOpen]);
 
-    const displayedOptions = isSearchable
-        ? options.filter((option) =>
-              option.label.toLowerCase().includes(searchTerm.toLowerCase()),
-          )
-        : options;
+        if (isPriceCustomRange) {
+            const parsedCustomPrice = parseCustomPriceRange(value);
+
+            if (parsedCustomPrice) {
+                setCustomMinPrice(parsedCustomPrice.minPrice);
+                setCustomMaxPrice(parsedCustomPrice.maxPrice);
+                setIsCustomRangePanelOpen(true);
+                return;
+            }
+
+            if (!isCustomRangeSelected) {
+                setCustomMinPrice("");
+                setCustomMaxPrice("");
+            }
+
+            return;
+        }
+
+        const parsedCustomRange = parseCustomDateRange(value);
+
+        if (parsedCustomRange) {
+            setCustomStartDate(parsedCustomRange.startDate);
+            setCustomEndDate(parsedCustomRange.endDate);
+            setIsCustomRangePanelOpen(true);
+            return;
+        }
+
+        if (!isCustomRangeSelected) {
+            setCustomStartDate("");
+            setCustomEndDate("");
+        }
+    }, [isCustomRangeSelected, isOpen, isPriceCustomRange, value]);
+
+    const displayedOptions = useMemo(() => {
+        if (isPlacesAutocomplete) {
+            const defaultOption =
+                options.find((option) => option.value === defaultValue) ??
+                (defaultValue
+                    ? { value: defaultValue, label: defaultValue }
+                    : null);
+            const selectedPlaceOption =
+                value && value !== defaultValue
+                    ? options.find((option) => option.value === value) ?? {
+                          value,
+                          label: value,
+                      }
+                    : null;
+            const predictionOptions = placePredictions.map((prediction) => ({
+                value: prediction,
+                label: prediction,
+            }));
+            const mergedOptions = [
+                ...(defaultOption ? [defaultOption] : []),
+                ...(selectedPlaceOption &&
+                selectedPlaceOption.value !== defaultOption?.value &&
+                !predictionOptions.some((option) => option.value === selectedPlaceOption.value)
+                    ? [selectedPlaceOption]
+                    : []),
+                ...predictionOptions.filter(
+                    (option) => option.value !== defaultOption?.value,
+                ),
+            ];
+
+            return mergedOptions;
+        }
+
+        if (isSearchEnabled) {
+            return options.filter((option) =>
+                option.label.toLowerCase().includes(searchTerm.toLowerCase()),
+            );
+        }
+
+        return options;
+    }, [
+        defaultValue,
+        isPlacesAutocomplete,
+        isSearchEnabled,
+        options,
+        placePredictions,
+        searchTerm,
+        value,
+    ]);
 
     const triggerLabel = isFilterPill
         ? isActive
             ? selectedLabel
             : (filterLabel ?? selectedLabel)
         : selectedLabel;
+
+    const canApplyCustomRange = isPriceCustomRange
+        ? Boolean(customMinPrice) &&
+          Boolean(customMaxPrice) &&
+          Number(customMinPrice) <= Number(customMaxPrice)
+        : Boolean(customStartDate) &&
+          Boolean(customEndDate) &&
+          customStartDate <= customEndDate;
+
+    const emptyPlacesMessage =
+        isPlacesAutocomplete && searchTerm.trim().length >= 2 && !isPlacesLoading
+            ? placesErrorMessage ??
+              (placePredictions.length === 0 ? "No locations found." : null)
+            : isPlacesAutocomplete && searchTerm.trim().length > 0 && searchTerm.trim().length < 2
+              ? "Keep typing to search locations."
+              : null;
 
     const handleToggle = () => {
         if (disabled) {
@@ -122,7 +266,55 @@ export function CustomDropdown({
     };
 
     const handleSelect = (nextValue: string) => {
+        if (supportsCustomRange && nextValue === customRangeOption) {
+            setIsCustomRangePanelOpen(true);
+            setCustomRangeError(null);
+            return;
+        }
+
+        setIsCustomRangePanelOpen(false);
         onChange(nextValue);
+        setIsOpen(false);
+    };
+
+    const handleApplyCustomRange = () => {
+        if (isPriceCustomRange) {
+            if (!customMinPrice || !customMaxPrice) {
+                setCustomRangeError("Enter a start and end price.");
+                return;
+            }
+
+            const minPrice = Number(customMinPrice);
+            const maxPrice = Number(customMaxPrice);
+
+            if (!Number.isFinite(minPrice) || !Number.isFinite(maxPrice)) {
+                setCustomRangeError("Enter valid prices.");
+                return;
+            }
+
+            if (minPrice > maxPrice) {
+                setCustomRangeError("Start price must be less than or equal to end price.");
+                return;
+            }
+
+            onChange(encodeCustomPriceRange(String(minPrice), String(maxPrice)));
+            setCustomRangeError(null);
+            setIsOpen(false);
+            return;
+        }
+
+        if (!customStartDate || !customEndDate) {
+            setCustomRangeError("Select a start and end date.");
+            return;
+        }
+
+        if (customStartDate > customEndDate) {
+            setCustomRangeError("Start date must be on or before end date.");
+            return;
+        }
+
+        onChange(encodeCustomDateRange(customStartDate, customEndDate));
+        setCustomRangeError(null);
         setIsOpen(false);
     };
 
@@ -182,13 +374,15 @@ export function CustomDropdown({
                 role="listbox"
                 className={`rounded-xl border border-[#0B0E0514] bg-[#FFFFFF] p-1 shadow-card ring-1 ring-black/5 ${
                     isFilterPill
-                        ? isSearchable
-                            ? "w-60"
-                            : "min-w-[11rem]"
+                        ? isCustomRangePanelOpen || isPlacesAutocomplete
+                            ? "w-72"
+                            : isSearchEnabled
+                              ? "w-60"
+                              : "min-w-[11rem]"
                         : "w-full"
                 }`}
             >
-                    {isSearchable ? (
+                    {isSearchEnabled ? (
                         <div className="mb-1 p-1">
                             <SearchInput
                                 size="compact"
@@ -206,7 +400,10 @@ export function CustomDropdown({
 
                     <div className="max-h-48 overflow-y-auto">
                         {displayedOptions.map((option) => {
-                            const isSelected = option.value === value;
+                            const isSelected =
+                                option.value === customRangeOption
+                                    ? isCustomRangeSelected
+                                    : option.value === value;
 
                             return (
                                 <button
@@ -237,7 +434,168 @@ export function CustomDropdown({
                                 </button>
                             );
                         })}
+
+                        {isPlacesAutocomplete && isPlacesLoading ? (
+                            <Typography
+                                type="text14"
+                                fontWeight={500}
+                                className="px-3 py-2 !text-[#0B0E05A3]"
+                            >
+                                Searching locations...
+                            </Typography>
+                        ) : null}
+
+                        {emptyPlacesMessage ? (
+                            <Typography
+                                type="text14"
+                                fontWeight={500}
+                                className="px-3 py-2 !text-[#0B0E05A3]"
+                            >
+                                {emptyPlacesMessage}
+                            </Typography>
+                        ) : null}
                     </div>
+
+                    {supportsCustomRange && isCustomRangePanelOpen ? (
+                        <div
+                            className="mt-1 space-y-3 border-t border-[#0B0E0514] p-2"
+                            data-testid={
+                                optionTestIdPrefix
+                                    ? `${optionTestIdPrefix}-custom-range-panel`
+                                    : undefined
+                            }
+                        >
+                            {isPriceCustomRange ? (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <label
+                                            htmlFor={`${triggerId}-custom-min-price`}
+                                            className="block text-xs font-medium text-[#0B0E05A3]"
+                                        >
+                                            Start price
+                                        </label>
+                                        <input
+                                            id={`${triggerId}-custom-min-price`}
+                                            type="number"
+                                            min={0}
+                                            step="1"
+                                            inputMode="decimal"
+                                            placeholder="0"
+                                            value={customMinPrice}
+                                            onChange={(event) => {
+                                                setCustomMinPrice(event.target.value);
+                                                setCustomRangeError(null);
+                                            }}
+                                            data-testid={
+                                                optionTestIdPrefix
+                                                    ? `${optionTestIdPrefix}-custom-min-price`
+                                                    : undefined
+                                            }
+                                            className="w-full rounded-lg border border-[#0B0E0514] bg-[#FFFFFF] px-3 py-2 text-sm text-[#0B0E05] outline-none transition-colors focus:border-[#518300]"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label
+                                            htmlFor={`${triggerId}-custom-max-price`}
+                                            className="block text-xs font-medium text-[#0B0E05A3]"
+                                        >
+                                            End price
+                                        </label>
+                                        <input
+                                            id={`${triggerId}-custom-max-price`}
+                                            type="number"
+                                            min={0}
+                                            step="1"
+                                            inputMode="decimal"
+                                            placeholder="1000"
+                                            value={customMaxPrice}
+                                            onChange={(event) => {
+                                                setCustomMaxPrice(event.target.value);
+                                                setCustomRangeError(null);
+                                            }}
+                                            data-testid={
+                                                optionTestIdPrefix
+                                                    ? `${optionTestIdPrefix}-custom-max-price`
+                                                    : undefined
+                                            }
+                                            className="w-full rounded-lg border border-[#0B0E0514] bg-[#FFFFFF] px-3 py-2 text-sm text-[#0B0E05] outline-none transition-colors focus:border-[#518300]"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <label
+                                            htmlFor={`${triggerId}-custom-start`}
+                                            className="block text-xs font-medium text-[#0B0E05A3]"
+                                        >
+                                            Start date
+                                        </label>
+                                        <input
+                                            id={`${triggerId}-custom-start`}
+                                            type="date"
+                                            value={customStartDate}
+                                            max={customEndDate || undefined}
+                                            onChange={(event) => {
+                                                setCustomStartDate(event.target.value);
+                                                setCustomRangeError(null);
+                                            }}
+                                            data-testid={
+                                                optionTestIdPrefix
+                                                    ? `${optionTestIdPrefix}-custom-start`
+                                                    : undefined
+                                            }
+                                            className="w-full rounded-lg border border-[#0B0E0514] bg-[#FFFFFF] px-3 py-2 text-sm text-[#0B0E05] outline-none transition-colors focus:border-[#518300]"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label
+                                            htmlFor={`${triggerId}-custom-end`}
+                                            className="block text-xs font-medium text-[#0B0E05A3]"
+                                        >
+                                            End date
+                                        </label>
+                                        <input
+                                            id={`${triggerId}-custom-end`}
+                                            type="date"
+                                            value={customEndDate}
+                                            min={customStartDate || undefined}
+                                            onChange={(event) => {
+                                                setCustomEndDate(event.target.value);
+                                                setCustomRangeError(null);
+                                            }}
+                                            data-testid={
+                                                optionTestIdPrefix
+                                                    ? `${optionTestIdPrefix}-custom-end`
+                                                    : undefined
+                                            }
+                                            className="w-full rounded-lg border border-[#0B0E0514] bg-[#FFFFFF] px-3 py-2 text-sm text-[#0B0E05] outline-none transition-colors focus:border-[#518300]"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {customRangeError ? (
+                                <p className="text-xs text-[#CC2929]">{customRangeError}</p>
+                            ) : null}
+
+                            <button
+                                type="button"
+                                disabled={!canApplyCustomRange}
+                                onClick={handleApplyCustomRange}
+                                data-testid={
+                                    optionTestIdPrefix
+                                        ? `${optionTestIdPrefix}-custom-apply`
+                                        : undefined
+                                }
+                                className="w-full rounded-lg bg-[#518300] px-3 py-2 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                Apply range
+                            </button>
+                        </div>
+                    ) : null}
             </FloatingMenuPortal>
         </div>
     );

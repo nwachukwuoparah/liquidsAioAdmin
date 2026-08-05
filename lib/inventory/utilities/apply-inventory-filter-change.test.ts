@@ -36,6 +36,14 @@ describe("applyInventoryFilterChange", () => {
         });
     });
 
+    it("maps encoded custom price ranges to min and max query params", () => {
+        expect(applyInventoryFilterChange({}, "priceRange", "price:120:850")).toEqual({
+            priceRange: "price:120:850",
+            min_price: "120",
+            max_price: "850",
+        });
+    });
+
     it("clears fields when a default All value is selected", () => {
         const previous = {
             category: "elt",

@@ -162,9 +162,9 @@ export default function AllLotsContentSection() {
         { id: 'sellerStatus', label: 'Seller status', defaultValue: 'All', options: ['All', 'Verified', 'Unverified'], icon: <ShieldIcon className="h-4 w-[15px] shrink-0 text-[#343330]" /> },
         { id: 'category', label: 'Category', defaultValue: 'All categories', options: ['All categories', 'Electronics', 'Apparel & Footwear', 'Home & Kitchen', 'Health & Beauty'], icon: <TagIcon className={FILTER_ICON_CLASS} /> },
         { id: 'condition', label: 'Condition', defaultValue: 'All conditions', options: ['All conditions', 'New', 'Mixed', 'Overstock'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'location', label: 'Location', defaultValue: 'All locations', isSearchable: true, searchPlaceholder: 'Search location...', options: ['All locations', 'California, USA', 'Texas, USA'], icon: <MapPinIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'location', label: 'Location', defaultValue: 'All locations', isSearchable: true, isPlacesAutocomplete: true, searchPlaceholder: 'Search location...', options: ['All locations'], icon: <MapPinIcon className={FILTER_ICON_CLASS} /> },
         { id: 'datePosted', label: 'Date posted', defaultValue: 'All time', options: ['All time', 'Today', 'This week'], icon: <CalendarDotsIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'priceRange', label: 'Price range', defaultValue: 'All prices', options: ['All prices', '$0 - $500', '$500 - $2,000', '$2,000 - $10,000', 'Over $10,000'], icon: <CurrencyDollarIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'priceRange', label: 'Price range', defaultValue: 'All prices', customRangeKind: 'price', options: ['All prices', '$0 - $500', '$500 - $2,000', '$2,000 - $10,000', 'Over $10,000', 'Custom range'], icon: <CurrencyDollarIcon className={FILTER_ICON_CLASS} /> },
     ];
 
     const selectedInventoryFilters = useMemo<Record<string, string | undefined>>(
@@ -357,8 +357,8 @@ export default function AllLotsContentSection() {
                                         type="text14"
                                         fontWeight={700}
                                         truncate
-                                        maxLength={42}
-                                        lines={2}
+                                        maxLength={23}
+                                        lines={1}
                                         className="min-w-0 flex-1 !text-[#0B0E05] leading-snug"
                                     >
                                         {lot.title}
@@ -464,38 +464,37 @@ export default function AllLotsContentSection() {
 
                 {/* DESKTOP SPREADSHEET LAYOUT TABLE */}
                 <div className="w-full">
-                    <div className="w-full overflow-x-auto">
-                    <table className="w-full text-left border-collapse table-auto min-w-[1000px]">
+                    <table className="w-full table-fixed border-collapse text-left">
                         <thead>
                             <tr className="border-b border-[#0B0E0514] bg-[#0B0E050A] text-[#0B0E05A3]">
-                                <th className="w-[56px] py-3.5 pl-6 pr-2 text-center">
+                                <th className="w-[48px] py-3.5 pl-6 pr-2 text-center">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">S/N</Typography>
                                 </th>
-                                <th className="py-3.5 pr-4 min-w-[280px] max-w-[340px]">
+                                <th className="w-[18%] py-3.5 pr-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Lot title</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[140px] max-w-[180px]">
+                                <th className="w-[13%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Seller</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[150px] max-w-[200px]">
+                                <th className="w-[13%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Category</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 text-center min-w-[80px]">
+                                <th className="w-[8%] py-3.5 px-3 text-center">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Quantity</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[90px]">
+                                <th className="w-[9%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Price</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[110px]">
+                                <th className="w-[10%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Condition</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[120px]">
+                                <th className="w-[10%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Date posted</Typography>
                                 </th>
-                                <th className="min-w-[140px] py-3.5 px-4">
+                                <th className="w-[8%] py-3.5 pl-3 pr-2">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Status</Typography>
                                 </th>
-                                <th className="py-3.5 pr-6 pl-2 w-[50px]"></th>
+                                <th className="w-[44px] py-3.5 pl-2 pr-4"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#0B0E0514]  bg-[#FFFFFF]">
@@ -524,25 +523,25 @@ export default function AllLotsContentSection() {
                                             {serialNumberOffset + index + 1}
                                         </Typography>
                                     </td>
-                                    <td className="py-3.5 pr-4 min-w-0 max-w-[340px]">
-                                        <div className="flex items-center w-full min-w-0">
-                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 relative mr-3 overflow-hidden`}>
+                                    <td className="min-w-0 py-3.5 pr-3">
+                                        <div className="flex w-full min-w-0 items-center">
+                                            <div className={`relative mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg`}>
                                                 {isLotImageUrl(lot.img) ? (
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img src={lot.img} alt="" className="h-full w-full object-cover" />
                                                 ) : (
                                                     <div className={`absolute inset-0 ${lot.img}`} />
                                                 )}
-                                                {lot.alert && <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-red-500 border border-white" />}
+                                                {lot.alert && <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-red-500" />}
                                             </div>
 
-                                            <div className="flex-1 min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <Typography
                                                     type="text14"
                                                     fontWeight={700}
-                                                    className=" block w-full"
+                                                    className="block w-full"
                                                     truncate={true}
-                                                    maxLength={40}
+                                                    maxLength={19}
                                                     lines={1}
                                                 >
                                                     {lot.title}
@@ -550,36 +549,38 @@ export default function AllLotsContentSection() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="py-3.5 px-4 min-w-0 max-w-[180px]">
+                                    <td className="min-w-0 py-3.5 px-3">
                                         <div className="block w-full min-w-0">
-                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={22} className=" block w-full">
+                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={16} className="block w-full">
                                                 {lot.seller}
                                             </Typography>
                                         </div>
                                     </td>
-                                    <td className="py-3.5 px-4 min-w-0 max-w-[200px]">
+                                    <td className="min-w-0 py-3.5 px-3">
                                         <div className="block w-full min-w-0">
-                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={24} className=" block w-full">
+                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={16} className="block w-full">
                                                 {lot.cat}
                                             </Typography>
                                         </div>
                                     </td>
-                                    <td className="py-3.5 px-4 text-center">
+                                    <td className="py-3.5 px-3 text-center">
                                         <Typography type="text14" fontWeight={600} className="text-[#0B0E05CC]">{lot.qty}</Typography>
                                     </td>
-                                    <td className="py-3.5 px-4">
-                                        <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">{lot.price}</Typography>
+                                    <td className="min-w-0 py-3.5 px-3">
+                                        <Typography type="text14" fontWeight={700} className="truncate text-[#0B0E05]">{lot.price}</Typography>
                                     </td>
-                                    <td className="py-3.5 px-4">
-                                        <Typography type="text14" fontWeight={500} className="">{lot.cond}</Typography>
+                                    <td className="min-w-0 py-3.5 px-3">
+                                        <Typography type="text14" fontWeight={500} truncate maxLength={12} className="block w-full">
+                                            {lot.cond}
+                                        </Typography>
                                     </td>
-                                    <td className="py-3.5 px-4">
-                                        <Typography type="text14" fontWeight={400} className="text-[#0B0E05A3]">{lot.date}</Typography>
+                                    <td className="min-w-0 py-3.5 px-3">
+                                        <Typography type="text14" fontWeight={400} className="truncate text-[#0B0E05A3]">{lot.date}</Typography>
                                     </td>
-                                    <td className="whitespace-nowrap py-3.5 px-4">
+                                    <td className="min-w-0 py-3.5 pl-3 pr-2">
                                         <LotStatusBadge status={lot.status} />
                                     </td>
-                                    <td className="relative py-3.5 pl-2 pr-6">
+                                    <td className="relative py-3.5 pl-2 pr-4">
                                         <InventoryActionMenu
                                             lotId={lot.id}
                                             lotSlug={lot.slug}
@@ -596,7 +597,6 @@ export default function AllLotsContentSection() {
                             </AdminAsyncContent>
                         </tbody>
                     </table>
-                    </div>
 
                     {/* DESKTOP FOOTER CONTROL AREA */}
                     <TablePagination

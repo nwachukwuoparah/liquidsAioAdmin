@@ -25,9 +25,7 @@ const CONDITION_OPTIONS = [
 ] as const;
 
 const LOCATION_OPTIONS = [
-    { value: "All location", label: "All location" },
-    { value: "California, USA", label: "California, USA" },
-    { value: "Texas, USA", label: "Texas, USA" },
+    { value: "All locations", label: "All locations" },
 ] as const;
 
 const DATE_POSTED_OPTIONS = [
@@ -37,11 +35,12 @@ const DATE_POSTED_OPTIONS = [
 ] as const;
 
 const PRICE_RANGE_OPTIONS = [
-    "All prices",
-    "$0 - $500",
-    "$500 - $2,000",
-    "$2,000 - $10,000",
-    "Over $10,000",
+    { value: "All prices", label: "All prices" },
+    { value: "$0 - $500", label: "$0 - $500" },
+    { value: "$500 - $2,000", label: "$500 - $2,000" },
+    { value: "$2,000 - $10,000", label: "$2,000 - $10,000" },
+    { value: "Over $10,000", label: "Over $10,000" },
+    { value: "Custom range", label: "Custom range" },
 ] as const;
 
 const LOT_STATUS_OPTIONS = [
@@ -165,7 +164,7 @@ function resolveDraftSelections(params: Record<string, string>) {
         sellerStatus,
         category: CATEGORY_CODE_TO_LABEL[params.category ?? ""] ?? "All categories",
         condition: CONDITION_VALUE_TO_LABEL[params.condition ?? ""] ?? "All conditions",
-        location: params.location ?? "All location",
+        location: params.location ?? "All locations",
         datePosted: params.datePosted ?? "All time",
         priceRange: params.priceRange ?? "All prices",
         lotStatus,
@@ -257,6 +256,9 @@ export default function InventoryFiltersModal({
                         value={selections.location}
                         options={[...LOCATION_OPTIONS]}
                         onChange={(value) => updateDraft("location", value)}
+                        isSearchable
+                        isPlacesAutocomplete
+                        searchPlaceholder="Search location..."
                         testId="inventory-filter-location"
                     />
 
@@ -268,21 +270,14 @@ export default function InventoryFiltersModal({
                         testId="inventory-filter-date-posted"
                     />
 
-                    <div className="space-y-2">
-                        <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">
-                            Price range
-                        </Typography>
-                        <div className="space-y-1">
-                            {PRICE_RANGE_OPTIONS.map((option) => (
-                                <RadioOption
-                                    key={option}
-                                    label={option}
-                                    selected={selections.priceRange === option}
-                                    onSelect={() => updateDraft("priceRange", option)}
-                                />
-                            ))}
-                        </div>
-                    </div>
+                    <FormFilterDropdownField
+                        label="Price range"
+                        value={selections.priceRange}
+                        options={[...PRICE_RANGE_OPTIONS]}
+                        onChange={(value) => updateDraft("priceRange", value)}
+                        customRangeKind="price"
+                        testId="inventory-filter-price-range"
+                    />
 
                     <div className="space-y-3">
                         <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">

@@ -26,7 +26,9 @@ import {
     WarningIcon,
 } from "@/components/vector";
 import { useAdminUsers, useAdminUserStats, useAdminUserTabCounts } from "@/lib/admin/hooks";
+import { resolveComplianceDateRange } from "@/lib/admin/utilities/compliance-filter-params";
 import { PANEL_CARD_CLASS, PANEL_CARD_SHELL_CLASS, STAT_CARD_CLASS } from "@/lib/card-styles";
+import { isCustomDateRangeValue } from "@/lib/filters/custom-date-range";
 import { formatCount } from "@/lib/format-count";
 import {
     getUserAccountStatusStyles,
@@ -77,12 +79,18 @@ export default function AllUsersBody() {
     // Unified operational state for API filter query parameters
     const [filterParams, setFilterParams] = useState<Record<string, string>>({});
 
+    const userListQueryParams = useMemo(() => {
+        const { joinedDate: _joinedDate, ...apiParams } = filterParams;
+
+        return {
+            ...apiParams,
+            accountType: activeSegmentTab,
+            ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+        };
+    }, [activeSegmentTab, filterParams, searchQuery]);
+
     // API Hooks passing parameters dynamically from state
-    const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useAdminUsers({
-        ...filterParams,
-        accountType: activeSegmentTab,
-        ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
-    });
+    const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useAdminUsers(userListQueryParams);
 
     const { data: userStats, isLoading: isLoadingUserStats, error: userStatsError } = useAdminUserStats();
 
@@ -127,8 +135,7 @@ export default function AllUsersBody() {
 
     const verificationOptions = ["All statuses", "Pending", "In Review", "Needs info", "Approved", "Rejected"];
     const accountStatusOptions = ["All", "Active", "Suspended"];
-    const dateOptions = ["All time", "Last 7 days", "Last 30 days", "Last 90 days"];
-    const staticLocations = ["All locations", "Philadelphia, PA 19107", "Cleveland, OH 44115", "San Francisco, CA 94103", "Orlando, FL 32801", "Atlanta, GA 30303"];
+    const dateOptions = ["All time", "Last 7 days", "Last 30 days", "Last 90 days", "Custom range"];
 
     const userFilterBlueprints: FilterConfig[] = [
         {
@@ -157,8 +164,9 @@ export default function AllUsersBody() {
             label: "Location",
             defaultValue: "All locations",
             isSearchable: true,
+            isPlacesAutocomplete: true,
             searchPlaceholder: "Search location...",
-            options: staticLocations,
+            options: ["All locations"],
             icon: userFilters[4].icon,
         },
     ];
@@ -175,10 +183,8 @@ export default function AllUsersBody() {
 
     const handleUserFilterChange = useCallback((filterId: string, value: string) => {
         setFilterParams((prevParams) => {
-            // Create a shallow copy of the previous parameters
             const updatedParams = { ...prevParams };
 
-            // Define terms that signify an inactive/clear filter state
             const isDefaultValue =
                 value === "" ||
                 value.toLowerCase() === "all" ||
@@ -186,15 +192,35 @@ export default function AllUsersBody() {
                 value.toLowerCase() === "all locations" ||
                 value.toLowerCase() === "all time";
 
+            if (filterId === "joinedDate") {
+                delete updatedParams.start;
+                delete updatedParams.end;
+                delete updatedParams.joinedDate;
+
+                if (!isDefaultValue) {
+                    updatedParams.joinedDate = value;
+                    const { start, end } = resolveComplianceDateRange(value);
+
+                    if (start) {
+                        updatedParams.start = start;
+                    }
+
+                    if (end) {
+                        updatedParams.end = end;
+                    }
+                }
+
+                return updatedParams;
+            }
+
             if (isDefaultValue) {
-                // Remove the key entirely so it won't be sent as a query parameter
                 delete updatedParams[filterId];
+            } else if (filterId === "location" || isCustomDateRangeValue(value)) {
+                updatedParams[filterId] = value.trim();
             } else {
-                // Set or overwrite with the new active value
                 updatedParams[filterId] = value.toLocaleLowerCase().trim();
             }
 
-            // console.log("Updated Filter Query Parameters:", updatedParams);
             return updatedParams;
         });
     }, []);
@@ -221,8 +247,8 @@ export default function AllUsersBody() {
         let count = 0;
         if (filterParams.complianceStatus !== "All statuses" && filterParams.complianceStatus !== "") count++;
         if (filterParams.accountStatus !== "All") count++;
-        if (filterParams.joinedDate !== "All time" && filterParams.joinedDate !== "") count++;
-        if (filterParams.location !== "All locations") count++;
+        if (filterParams.joinedDate || filterParams.start || filterParams.end) count++;
+        if (filterParams.location && filterParams.location !== "All locations") count++;
         return count || 1;
     }, [filterParams]);
 
