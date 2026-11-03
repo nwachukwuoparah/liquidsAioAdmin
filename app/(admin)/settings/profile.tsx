@@ -32,7 +32,6 @@ const fieldInputClass =
 
 export const ProfileSettings: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
-    const [email, setEmail] = useState("");
     const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
     const profileQuery = useAdminSettingsProfile();
     const saveProfileMutation = useAdminSettingsProfileSave();
@@ -68,7 +67,6 @@ export const ProfileSettings: React.FC = () => {
             fullName: `${profileData.firstName} ${profileData.lastName}`.trim(),
             phoneNumber: profileData.phone,
         });
-        setEmail(profileData.email);
         setProfileImageUrl(profileData.profileImageUrl ?? null);
         clearErrors();
     }, [profileQuery.isSuccess, profileData, reset, clearErrors]);
@@ -184,55 +182,6 @@ export const ProfileSettings: React.FC = () => {
                             </div>
                         </>
                     )}
-                </div>
-
-                <div className="space-y-4">
-                    <Typography type="text16" fontWeight={700} className="tracking-tight text-[#101828]">
-                        Account settings
-                    </Typography>
-
-                    <div className={`flex w-full items-center justify-between p-4 ${PROFILE_CARD_CLASS}`}>
-                        <div className="space-y-0.5">
-                            <div className="flex flex-col">
-                                <Typography type="text14" fontWeight={700} className="text-[#101828]">
-                                    Change email
-                                </Typography>
-                                <Typography type="text14" className="block text-[#344054]">
-                                    {email ? `[${email}]` : "[—]"}
-                                </Typography>
-                            </div>
-                            <Typography type="text12" className="block pt-0.5 text-[#667085]">
-                                Update the email linked to your your admin account.
-                            </Typography>
-                        </div>
-                        <button className="ml-4 flex shrink-0 cursor-pointer items-center gap-2 border-l border-[#0B0E0514] bg-[#FFFFFF] px-3.5 py-2 text-xs font-semibold text-[#344054] transition-colors hover:bg-gray-50">
-                            <PencilSimpleLineIcon className="h-3.5 w-3.5 shrink-0 text-[#475467]" />
-                            Edit
-                        </button>
-                    </div>
-
-                    <div className={`flex w-full items-center justify-between p-4 ${PROFILE_CARD_CLASS}`}>
-                        <div className="space-y-0.5">
-                            <div className="flex flex-col">
-                                <Typography type="text14" fontWeight={700} className="text-[#101828]">
-                                    Change password
-                                </Typography>
-                                <Typography
-                                    type="text14"
-                                    className="block font-bold tracking-widest text-[#344054]"
-                                >
-                                    [••••••••••••••••••••]
-                                </Typography>
-                            </div>
-                            <Typography type="text12" className="block pt-0.5 text-[#667085]">
-                                Choose a strong password to keep your account secure.
-                            </Typography>
-                        </div>
-                        <button className="ml-4 flex shrink-0 cursor-pointer items-center gap-2 border-l border-[#0B0E0514] bg-[#FFFFFF] px-3.5 py-2 text-xs font-semibold text-[#344054] transition-colors hover:bg-gray-50">
-                            <PencilSimpleLineIcon className="h-3.5 w-3.5 shrink-0 text-[#475467]" />
-                            Edit
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

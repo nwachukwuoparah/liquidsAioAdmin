@@ -19,36 +19,49 @@ import React, { useEffect, useState } from "react";
 
 export const GeneralSettings: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
+    const generalSettingsQuery = useAdminSettingsGeneral();
+    const saveGeneralSettingsMutation = useAdminSettingsGeneralSave();
+    const companyInfo = generalSettingsQuery.data;
+
     const {
         control,
         register,
         reset,
         handleSubmit,
+        watch,
         formState: { errors, isDirty },
         clearErrors,
     } = useForm<AdminSettingsGeneralFormInput, unknown, AdminSettingsGeneralFormValues>({
         resolver: zodResolver(adminSettingsGeneralSchema),
+        values: companyInfo
+            ? {
+                  contactEmail: companyInfo.contactEmail ?? "",
+                  phoneNumber: companyInfo.phoneNumber ?? "",
+              }
+            : undefined,
         defaultValues: {
             contactEmail: "",
             phoneNumber: "",
         },
         mode: "onSubmit",
     });
-    const generalSettingsQuery = useAdminSettingsGeneral();
-    const saveGeneralSettingsMutation = useAdminSettingsGeneralSave();
-    const companyInfo = generalSettingsQuery.data;
-    const phoneInputKey = `${companyInfo?.phoneNumber ?? ""}-${generalSettingsQuery.dataUpdatedAt}`;
+
+    const watchedEmail = watch("contactEmail");
+    const watchedPhone = watch("phoneNumber");
+
+    const emailInputKey = `email-${isEditing ? "edit" : "preview"}-${companyInfo?.contactEmail ?? ""}-${generalSettingsQuery.dataUpdatedAt}`;
+    const phoneInputKey = `phone-${isEditing ? "edit" : "preview"}-${companyInfo?.phoneNumber ?? ""}-${generalSettingsQuery.dataUpdatedAt}`;
     const isSaving = saveGeneralSettingsMutation.isPending;
     const isSaveActive = isDirty && !isSaving;
 
     useEffect(() => {
-        if (!generalSettingsQuery.isSuccess) {
+        if (!generalSettingsQuery.isSuccess || !companyInfo) {
             return;
         }
 
         reset({
-            contactEmail: companyInfo?.contactEmail ?? "",
-            phoneNumber: companyInfo?.phoneNumber ?? "",
+            contactEmail: companyInfo.contactEmail ?? "",
+            phoneNumber: companyInfo.phoneNumber ?? "",
         });
         clearErrors();
     }, [generalSettingsQuery.isSuccess, companyInfo, reset, clearErrors]);
@@ -144,8 +157,10 @@ export const GeneralSettings: React.FC = () => {
                                 } ${isEditing ? "bg-[#FFFFFF]" : "bg-slate-50/70"}`}
                             >
                                 <input
+                                    key={emailInputKey}
                                     type="email"
                                     aria-label="Contact email"
+                                    placeholder="Enter contact email"
                                     aria-invalid={Boolean(errors.contactEmail)}
                                     aria-describedby={
                                         errors.contactEmail ? "contact-email-error" : undefined

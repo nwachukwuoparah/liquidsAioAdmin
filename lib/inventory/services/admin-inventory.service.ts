@@ -27,9 +27,55 @@ export async function fetchAdminInventoryLotsPage(
 ): Promise<AdminInventoryLotsMappedPage> {
     const { body } = await apiClient.get<unknown>(ADMIN_LOTS_PATH, params);
 
-    const parsedPage = parseAdminInventoryLotsResponse(body, params.limit);
+    let parsedPage = parseAdminInventoryLotsResponse(body, params.limit);
     const requestedPage = Math.max(1, Number(params.page) || 1);
     const limit = Math.max(1, Number(params.limit) || ADMIN_INVENTORY_DEFAULT_PAGE_LIMIT);
+
+    // If backend full-text search returns 0 results for a search query (common with partial prefixes like 'mag' for 'MagCharge'),
+    // fall back to fetching without the restrictive search param and filtering on the client.
+    const searchTerm = params.search?.trim().toLowerCase();
+    if (parsedPage.lots.length === 0 && searchTerm) {
+        const fallbackParams = { ...params };
+        delete fallbackParams.search;
+        try {
+            const fallbackResponse = await apiClient.get<unknown>(ADMIN_LOTS_PATH, fallbackParams);
+            const fallbackPage = parseAdminInventoryLotsResponse(fallbackResponse.body, params.limit);
+            const filteredLots = fallbackPage.lots.filter((record) => {
+                const title = (record.title ?? "").toLowerCase();
+                const desc = (record.description ?? "").toLowerCase();
+                const slug = (record.slug ?? "").toLowerCase();
+                const cat = (record.category ?? "").toLowerCase();
+                const cond = (record.condition ?? "").toLowerCase();
+                const creatorFirst = (record.creator?.firstName ?? "").toLowerCase();
+                const creatorLast = (record.creator?.lastName ?? "").toLowerCase();
+                const creatorBusiness = (record.creator?.businessName ?? "").toLowerCase();
+                const sellerBusiness = (record.seller?.businessName ?? "").toLowerCase();
+
+                return (
+                    title.includes(searchTerm) ||
+                    desc.includes(searchTerm) ||
+                    slug.includes(searchTerm) ||
+                    cat.includes(searchTerm) ||
+                    cond.includes(searchTerm) ||
+                    creatorFirst.includes(searchTerm) ||
+                    creatorLast.includes(searchTerm) ||
+                    creatorBusiness.includes(searchTerm) ||
+                    sellerBusiness.includes(searchTerm)
+                );
+            });
+
+            if (filteredLots.length > 0) {
+                parsedPage = {
+                    ...parsedPage,
+                    lots: filteredLots,
+                    count: filteredLots.length,
+                };
+            }
+        } catch {
+            // Keep original empty parsedPage if fallback request fails
+        }
+    }
+
     const results = parsedPage.lots.map((record, index) => mapAdminInventoryLotApiRecord(record, index));
     const totalCount = Math.max(0, Number(parsedPage.count ?? results.length) || 0);
     const totalPages = Math.max(1, Math.ceil(totalCount / limit));

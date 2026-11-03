@@ -8,16 +8,24 @@ describe("applyInventoryFilterChange", () => {
     it("maps category and condition labels to API values", () => {
         let params = applyInventoryFilterChange({}, "category", "Electronics");
         params = applyInventoryFilterChange(params, "condition", "New");
-
         expect(params).toEqual({
             category: "elt",
             condition: "new",
         });
+
+        params = applyInventoryFilterChange(params, "condition", "Refurbished");
+        expect(params.condition).toBe("refurbished");
+
+        params = applyInventoryFilterChange(params, "category", "General Merchandise");
+        expect(params.category).toBe("gml");
     });
 
-    it("maps lot status labels including Pending approval and Rejected", () => {
+    it("maps lot status labels including Pending approval, In review, and Rejected", () => {
         expect(applyInventoryFilterChange({}, "status", "Pending approval")).toEqual({
             review_status: "pending",
+        });
+        expect(applyInventoryFilterChange({}, "status", "In review")).toEqual({
+            review_status: "in_review",
         });
         expect(applyInventoryFilterChange({}, "status", "Rejected")).toEqual({
             review_status: "rejected",
@@ -47,7 +55,7 @@ describe("applyInventoryFilterChange", () => {
     it("clears fields when a default All value is selected", () => {
         const previous = {
             category: "elt",
-            sellerStatus: "Verified",
+            condition: "new",
             review_status: "pending",
             priceRange: "$0 - $500",
             min_price: "0",
@@ -55,7 +63,7 @@ describe("applyInventoryFilterChange", () => {
         };
 
         let params = applyInventoryFilterChange(previous, "category", "All categories");
-        params = applyInventoryFilterChange(params, "sellerStatus", "All sellers");
+        params = applyInventoryFilterChange(params, "condition", "All conditions");
         params = applyInventoryFilterChange(params, "status", "All status");
         params = applyInventoryFilterChange(params, "priceRange", "All prices");
 
@@ -69,7 +77,7 @@ describe("countActiveInventoryFilters", () => {
             countActiveInventoryFilters({
                 review_status: "pending",
                 category: "elt",
-                sellerStatus: "Verified",
+                condition: "new",
                 min_price: "0",
                 max_price: "500",
             }),

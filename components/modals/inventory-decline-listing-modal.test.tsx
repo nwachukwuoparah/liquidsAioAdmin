@@ -6,7 +6,7 @@ const closeModalMock = vi.fn();
 const declineMutate = vi.fn();
 
 vi.mock("@/context/modal-provider", () => ({
-    useModal: () => ({ closeModal: closeModalMock, showModal: vi.fn() }),
+    useModal: () => ({ closeModal: closeModalMock, hideAllModals: closeModalMock, showModal: vi.fn() }),
 }));
 
 vi.mock("@/lib/inventory/hooks/use-admin-inventory-review", () => ({

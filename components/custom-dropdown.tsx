@@ -8,6 +8,7 @@ import {
     CUSTOM_DATE_RANGE_OPTION,
     encodeCustomDateRange,
     formatCustomDateRangeLabel,
+    isCustomDateRangeOption,
     isCustomDateRangeValue,
     parseCustomDateRange,
 } from "@/lib/filters/custom-date-range";
@@ -110,8 +111,12 @@ export function CustomDropdown({
     const isPriceCustomRange = customRangeKind === "price";
     const customRangeOption = isPriceCustomRange
         ? CUSTOM_PRICE_RANGE_OPTION
-        : CUSTOM_DATE_RANGE_OPTION;
-    const supportsCustomRange = options.some((option) => option.value === customRangeOption);
+        : (options.find((opt) => isCustomDateRangeOption(opt.value))?.value ?? CUSTOM_DATE_RANGE_OPTION);
+    const supportsCustomRange = options.some((option) =>
+        isPriceCustomRange
+            ? option.value === CUSTOM_PRICE_RANGE_OPTION
+            : isCustomDateRangeOption(option.value),
+    );
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [isCustomRangePanelOpen, setIsCustomRangePanelOpen] = useState(false);
@@ -266,7 +271,10 @@ export function CustomDropdown({
     };
 
     const handleSelect = (nextValue: string) => {
-        if (supportsCustomRange && nextValue === customRangeOption) {
+        if (
+            supportsCustomRange &&
+            (nextValue === customRangeOption || (!isPriceCustomRange && isCustomDateRangeOption(nextValue)))
+        ) {
             setIsCustomRangePanelOpen(true);
             setCustomRangeError(null);
             return;
@@ -398,7 +406,7 @@ export function CustomDropdown({
                         </div>
                     ) : null}
 
-                    <div className="max-h-48 overflow-y-auto">
+                    <div className="max-h-80 overflow-y-auto">
                         {displayedOptions.map((option) => {
                             const isSelected =
                                 option.value === customRangeOption

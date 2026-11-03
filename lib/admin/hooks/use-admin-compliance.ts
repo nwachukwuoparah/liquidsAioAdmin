@@ -11,13 +11,15 @@ import {
     fetchAdminComplianceReviewsPage,
     fetchAdminComplianceAuditLogsPage,
     fetchAdminComplianceDetail,
+    fetchAdminComplianceDocumentViewingLink,
+    type FetchAdminComplianceViewingLinkParams,
     postAdminComplianceActionRequest,
     postAdminComplianceAssignee,
     postAdminComplianceClaim,
     postAdminComplianceUnclaim,
 } from "@/lib/compliance/services/admin-compliance.service";
 import type { AdminComplianceApiCursor } from "@/lib/compliance/types/admin-compliance-api.types";
-import type { AdminComplianceDetailRecord } from "@/lib/compliance/types/admin-compliance-detail.types";
+import type { AdminComplianceDetailData } from "@/lib/compliance/types/admin-compliance-detail.types";
 import { QueryConfig } from "@/lib/query/query-config";
 
 function invalidateComplianceAssignmentQueries(
@@ -34,19 +36,54 @@ function invalidateComplianceAssignmentQueries(
 function patchComplianceDetailAssignee(
     queryClient: ReturnType<typeof useQueryClient>,
     userId: string,
-    assignedTo: string,
+    assignedAdminName: string,
 ) {
-    queryClient.setQueryData<AdminComplianceDetailRecord>(
+    queryClient.setQueryData<any>(
         ["admin-compliance-detail", userId],
-        (currentDetail) => {
+        (currentDetail: any) => {
             if (!currentDetail) {
                 return currentDetail;
             }
 
-            return {
+            const updated: any = {
                 ...currentDetail,
-                assignedTo,
+                assignedTo: assignedAdminName,
             };
+
+            if (currentDetail.complianceData) {
+                if (!assignedAdminName) {
+                    updated.complianceData = {
+                        ...currentDetail.complianceData,
+                        complianceReviewAssignment: null,
+                    };
+                } else {
+                    updated.complianceData = {
+                        ...currentDetail.complianceData,
+                        complianceReviewAssignment: {
+                            id:
+                                currentDetail.complianceData.complianceReviewAssignment?.id ?? "",
+                            userId,
+                            assignedAdminId:
+                                currentDetail.complianceData.complianceReviewAssignment?.assignedAdminId ?? "",
+                            status: "claimed",
+                            createdAt:
+                                currentDetail.complianceData.complianceReviewAssignment?.createdAt ??
+                                new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                            assignedAdmin: {
+                                id:
+                                    currentDetail.complianceData.complianceReviewAssignment?.assignedAdmin?.id ??
+                                    "",
+                                firstName: assignedAdminName,
+                                lastName: "",
+                                email: "",
+                            },
+                        },
+                    };
+                }
+            }
+
+            return updated;
         },
     );
 }
@@ -171,11 +208,13 @@ export function useAdminComplianceClaim(userId: string) {
             toast.success(response.message);
             await invalidateComplianceAssignmentQueries(queryClient, userId);
 
-            const currentDetail = queryClient.getQueryData<AdminComplianceDetailRecord>([
+            const currentDetail = queryClient.getQueryData<AdminComplianceDetailData>([
                 "admin-compliance-detail",
                 userId,
             ]);
-            const hasServerAssignee = Boolean(currentDetail?.assignedTo?.trim());
+            const hasServerAssignee = Boolean(
+                currentDetail?.complianceData?.complianceReviewAssignment?.status === "claimed",
+            );
 
             if (!hasServerAssignee && response.assignedReviewerName.trim()) {
                 patchComplianceDetailAssignee(queryClient, userId, response.assignedReviewerName.trim());
@@ -207,6 +246,25 @@ export function useAdminComplianceUnclaim(userId: string) {
                 toast.error(error.message);
             }
         },
+    });
+}
+
+/** Loads a secure signed viewing link for a compliance document. */
+export function useAdminComplianceDocumentViewingLink(
+    params?: FetchAdminComplianceViewingLinkParams | null,
+    enabled = true,
+) {
+    return useQuery({
+        queryKey: ["admin-compliance-document-viewing-link", params?.file_id, params?.format, params?.type],
+        queryFn: () => {
+            if (!params?.file_id || !params?.type) {
+                throw new Error("Document file ID and type are required.");
+            }
+            return fetchAdminComplianceDocumentViewingLink(params);
+        },
+        enabled: Boolean(params?.file_id && params?.type) && enabled,
+        staleTime: 1000 * 90, // 90 seconds (signed URL expires in 2m)
+        refetchOnWindowFocus: false,
     });
 }
 

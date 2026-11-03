@@ -17,9 +17,19 @@ export const INVENTORY_SUSPEND_REASON_OPTIONS = [
     { value: INVENTORY_SUSPEND_REASON_OTHER, label: "Other (please specify)" },
 ] as const;
 
-/** Returns the lot detail path for a lot slug (or id fallback). */
+/** Matches UUID lot ids from the inventory list API. */
+const LOT_UUID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Returns the lot detail path for a lot slug, or `/lots/by-id/:id` for UUIDs. */
 export function getAdminLotDetailPath(lotIdentifier: string): string {
-    return `/lots/${lotIdentifier}`;
+    const encodedIdentifier = encodeURIComponent(lotIdentifier);
+
+    if (LOT_UUID_PATTERN.test(lotIdentifier)) {
+        return `/lots/by-id/${encodedIdentifier}`;
+    }
+
+    return `/lots/${encodedIdentifier}`;
 }
 
 /** Returns the approve path for a lot: POST /lots/{lotId}/approve. */

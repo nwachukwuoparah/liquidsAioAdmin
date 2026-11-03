@@ -60,4 +60,37 @@ describe("buildInventoryLotsQueryParams", () => {
             reported_lots: "true",
         });
     });
+
+    it("supports created_by seller filter for seller-specific lot requests", () => {
+        expect(
+            buildInventoryLotsQueryParams(
+                { sellerId: "01918a20-b472-7890-a1b2-c3d4e5f60718" },
+                { activeTab: "All Lots" },
+            ),
+        ).toMatchObject({
+            created_by: "01918a20-b472-7890-a1b2-c3d4e5f60718",
+        });
+
+        expect(
+            buildInventoryLotsQueryParams(
+                {},
+                { created_by: "01918a20-b472-7890-a1b2-c3d4e5f60718", draft_id: "draft-123" },
+            ),
+        ).toMatchObject({
+            created_by: "01918a20-b472-7890-a1b2-c3d4e5f60718",
+            draft_id: "draft-123",
+        });
+    });
+
+    it("supports admin-only deleted_lots and in_review filters", () => {
+        expect(
+            buildInventoryLotsQueryParams(
+                { review_status: "in_review" },
+                { deleted_lots: true },
+            ),
+        ).toMatchObject({
+            review_status: "in_review",
+            deleted_lots: "true",
+        });
+    });
 });

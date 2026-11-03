@@ -28,6 +28,7 @@ export interface AdminComplianceDetailApiDocument {
 
 export interface AdminComplianceKycRecord {
     id?: string;
+    userId?: string;
     createdAt?: string;
     updatedAt?: string;
     status?: string;
@@ -36,6 +37,8 @@ export interface AdminComplianceKycRecord {
 
 export interface AdminComplianceKybRecord {
     id?: string;
+    userId?: string;
+    businessName?: string;
     createdAt?: string;
     updatedAt?: string;
     status?: string;
@@ -77,13 +80,23 @@ export interface AdminComplianceDetailApiUser {
 export interface AdminComplianceDetailApiPayload extends AdminComplianceDetailApiUser {
     complianceData?: AdminComplianceDetailApiUser;
     user?: AdminComplianceDetailApiUser;
+    kyb?: AdminComplianceKybRecord;
+    kyc?: AdminComplianceKycRecord;
 }
 
 const KYC_DOCUMENT_TYPE_LABELS: Record<string, string> = {
     gov_id: "Government ID",
     ein: "EIN Confirmation",
+    ein_document: "EIN Confirmation",
     w9: "W-9",
     business_license: "Business License",
+    state_business_license: "State Business License",
+    certificate_of_incorporation: "Certificate of Incorporation",
+    articles_of_incorporation: "Articles of Incorporation",
+    bank_statement: "Bank Statement",
+    utility_bill: "Utility Bill",
+    tax_id: "Tax ID",
+    tin: "TIN Confirmation",
 };
 
 function resolveAssigneeName(
@@ -137,8 +150,17 @@ function resolveAssigneeName(
     return "";
 }
 
-function normalizeAccountType(value?: string): AdminComplianceDetailRecord["accountType"] {
-    return value?.toLowerCase() === "seller" ? "seller" : "buyer";
+function normalizeAccountType(
+    value?: string,
+    hasKyb = false,
+): AdminComplianceDetailRecord["accountType"] {
+    if (value?.toLowerCase() === "seller") {
+        return "seller";
+    }
+    if (value?.toLowerCase() === "buyer") {
+        return "buyer";
+    }
+    return hasKyb ? "seller" : "buyer";
 }
 
 function normalizeReviewStatus(
@@ -173,13 +195,20 @@ function formatKycDocumentType(type?: string): string {
     }
 
     const normalizedType = type.trim().toLowerCase();
-    return KYC_DOCUMENT_TYPE_LABELS[normalizedType] ?? type.replace(/_/g, " ");
+    if (KYC_DOCUMENT_TYPE_LABELS[normalizedType]) {
+        return KYC_DOCUMENT_TYPE_LABELS[normalizedType];
+    }
+
+    return type
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function mapComplianceDocument(
     document: AdminComplianceDetailApiDocument,
     index: number,
     userId: string,
+    verificationType?: ComplianceVerificationType,
 ): ComplianceDocumentRecord {
     const documentType = document.type ?? document.documentType;
 
@@ -197,6 +226,7 @@ function mapComplianceDocument(
         submittedAt: document.submittedAt ?? document.createdAt ?? "",
         status: normalizeDocumentStatus(document.status ?? document.reviewStatus),
         fileUrl: document.fileUrl ?? document.fileId ?? document.url ?? document.filePath,
+        verificationType,
     };
 }
 
@@ -226,71 +256,114 @@ function resolveAssigneeOptions(payload: AdminComplianceDetailApiPayload): strin
         .filter(Boolean);
 }
 
-function resolveAssignedTo(user: AdminComplianceDetailApiUser): string {
+function resolveAssignedTo(
+    payload: AdminComplianceDetailApiPayload,
+    user: AdminComplianceDetailApiUser,
+): string {
     if (user.assignedTo?.trim()) {
         return user.assignedTo.trim();
     }
+    if (payload.assignedTo?.trim()) {
+        return payload.assignedTo.trim();
+    }
 
-    const assignment = user.complianceReviewAssignment;
+    const assignment = user.complianceReviewAssignment ?? payload.complianceReviewAssignment;
 
     if (typeof assignment === "string" && assignment.trim()) {
         return assignment.trim();
     }
 
     if (assignment && typeof assignment === "object") {
+        if ("status" in assignment && assignment.status === "released") {
+            return "";
+        }
         const assigneeName = resolveAssigneeName(assignment);
         if (assigneeName) {
             return assigneeName;
         }
     }
 
-    const assignee = user.assignedReviewer ?? user.assignee ?? user.reviewAssignee;
+    const assignee =
+        user.assignedReviewer ??
+        user.assignee ??
+        user.reviewAssignee ??
+        payload.assignedReviewer ??
+        payload.assignee ??
+        payload.reviewAssignee;
+
     return resolveAssigneeName(assignee);
+}
+
+interface ResolvedApiDocument {
+    document: AdminComplianceDetailApiDocument;
+    verificationType?: ComplianceVerificationType;
 }
 
 function resolveDocuments(
     payload: AdminComplianceDetailApiPayload,
     user: AdminComplianceDetailApiUser,
-): AdminComplianceDetailApiDocument[] {
-    const kybDocuments = user.kyb?.kybDocuments ?? [];
-    if (kybDocuments.length > 0) {
-        return kybDocuments;
+): ResolvedApiDocument[] {
+    const kyb = payload.kyb ?? user.kyb;
+    const kyc = payload.kyc ?? user.kyc;
+
+    const kybDocuments: ResolvedApiDocument[] = (kyb?.kybDocuments ?? []).map((document) => ({
+        document,
+        verificationType: "kyb",
+    }));
+
+    const kycDocuments: ResolvedApiDocument[] = (kyc?.kycDocuments ?? []).map((document) => ({
+        document,
+        verificationType: "kyc",
+    }));
+
+    const combinedKycKyb = [...kybDocuments, ...kycDocuments];
+    if (combinedKycKyb.length > 0) {
+        return combinedKycKyb;
     }
 
-    const kycDocuments = user.kyc?.kycDocuments ?? [];
-    if (kycDocuments.length > 0) {
-        return kycDocuments;
-    }
-
-    return (
+    const fallbackDocs =
         payload.documents ??
         user.documents ??
         user.complianceDocuments ??
         user.uploadedDocuments ??
-        []
+        [];
+
+    const defaultVerificationType = resolveComplianceVerificationTypeFromAccountType(
+        user.accountType ?? user.account_type ?? payload.accountType ?? payload.account_type,
     );
+
+    return fallbackDocs.map((document) => ({
+        document,
+        verificationType: defaultVerificationType,
+    }));
 }
 
-function resolveVerificationContext(user: AdminComplianceDetailApiUser): {
+function resolveVerificationContext(
+    payload: AdminComplianceDetailApiPayload,
+    user: AdminComplianceDetailApiUser,
+): {
     verificationType: ComplianceVerificationType;
     verificationId: string;
 } {
-    if (user.kyb?.id?.trim()) {
+    const kyb = payload.kyb ?? user.kyb;
+    const kyc = payload.kyc ?? user.kyc;
+
+    if (kyb?.id?.trim()) {
         return {
             verificationType: "kyb",
-            verificationId: user.kyb.id.trim(),
+            verificationId: kyb.id.trim(),
         };
     }
 
-    if (user.kyc?.id?.trim()) {
+    if (kyc?.id?.trim()) {
         return {
             verificationType: "kyc",
-            verificationId: user.kyc.id.trim(),
+            verificationId: kyc.id.trim(),
         };
     }
 
     const verificationType = resolveComplianceVerificationTypeFromAccountType(
-        user.accountType ?? user.account_type,
+        user.accountType ?? user.account_type ?? payload.accountType ?? payload.account_type,
     );
 
     return {
@@ -304,14 +377,18 @@ export function mapAdminComplianceDetailApiRecord(
     payload: AdminComplianceDetailApiPayload,
 ): AdminComplianceDetailRecord {
     const user = resolveComplianceUser(payload);
-    const userId = user.id?.trim();
+    const userId = user.id?.trim() ?? payload.id?.trim();
 
     if (!userId) {
         throw new Error("Compliance detail response is missing user id.");
     }
 
-    const documents = resolveDocuments(payload, user).map((document, index) =>
-        mapComplianceDocument(document, index, userId),
+    const kyb = payload.kyb ?? user.kyb;
+    const kyc = payload.kyc ?? user.kyc;
+
+    const resolvedDocuments = resolveDocuments(payload, user);
+    const documents = resolvedDocuments.map(({ document, verificationType }, index) =>
+        mapComplianceDocument(document, index, userId, verificationType),
     );
     const documentsApprovedCount =
         user.documentsApprovedCount ??
@@ -320,28 +397,47 @@ export function mapAdminComplianceDetailApiRecord(
     const documentsTotalCount =
         user.documentsTotalCount ?? payload.documentsTotalCount ?? documents.length;
     const assigneeOptions = resolveAssigneeOptions(payload);
-    const assignedTo = resolveAssignedTo(user);
-    const { verificationType, verificationId } = resolveVerificationContext(user);
+    const assignedTo = resolveAssignedTo(payload, user);
+    const { verificationType, verificationId } = resolveVerificationContext(payload, user);
 
     return {
         id: userId,
-        email: user.email?.trim() ?? "",
-        firstName: user.firstName?.trim(),
-        lastName: user.lastName?.trim(),
-        profilePicture: user.profilePicture ?? undefined,
-        accountType: normalizeAccountType(user.accountType ?? user.account_type),
+        email: user.email?.trim() ?? payload.email?.trim() ?? "",
+        firstName: user.firstName?.trim() ?? payload.firstName?.trim(),
+        lastName: user.lastName?.trim() ?? payload.lastName?.trim(),
+        profilePicture: user.profilePicture ?? payload.profilePicture ?? undefined,
+        accountType: normalizeAccountType(
+            user.accountType ?? user.account_type ?? payload.accountType ?? payload.account_type,
+            Boolean(kyb?.id || kyb?.businessName || (kyb?.kybDocuments && kyb.kybDocuments.length > 0)),
+        ),
         complianceReviewStatus: normalizeReviewStatus(
-            user.complianceReviewStatus ?? user.compliance_review_status,
+            user.complianceReviewStatus ??
+                user.compliance_review_status ??
+                payload.complianceReviewStatus ??
+                payload.compliance_review_status,
         ),
         submittedAt:
             user.complianceSubmittedAt ??
             user.submittedAt ??
-            user.kyc?.createdAt ??
+            payload.complianceSubmittedAt ??
+            payload.submittedAt ??
+            kyb?.createdAt ??
+            kyc?.createdAt ??
             user.createdAt ??
+            payload.createdAt ??
             user.complianceUpdatedAt ??
             user.compliance_updated_at ??
+            payload.complianceUpdatedAt ??
+            payload.compliance_updated_at ??
             "",
-        complianceUpdatedAt: user.complianceUpdatedAt ?? user.compliance_updated_at ?? "",
+        complianceUpdatedAt:
+            user.complianceUpdatedAt ??
+            user.compliance_updated_at ??
+            payload.complianceUpdatedAt ??
+            payload.compliance_updated_at ??
+            kyb?.updatedAt ??
+            kyc?.updatedAt ??
+            "",
         documentsApprovedCount,
         documentsTotalCount,
         assignedTo: assignedTo || "",

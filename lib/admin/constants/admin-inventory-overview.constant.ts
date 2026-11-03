@@ -1,3 +1,5 @@
+import type { PeriodOption } from "@/components/period-dropdown";
+
 export interface AdminInventoryOverviewMetric {
     count: number;
     delta: number;
@@ -65,13 +67,50 @@ export const INVENTORY_OVERVIEW_STAT_CARDS: AdminInventoryOverviewStatCardConfig
 /** Returns ISO `start` / `end` for the current calendar month. */
 export function getInventoryOverviewDefaultRange(): { start: string; end: string } {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
     return {
         start: start.toISOString(),
         end: end.toISOString(),
     };
+}
+
+/**
+ * Returns ISO `start` / `end` query params for the selected period option.
+ */
+export function getInventoryOverviewRange(period: PeriodOption): { start: string; end: string } {
+    const now = new Date();
+
+    if (period === "Today") {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { start: start.toISOString(), end: end.toISOString() };
+    }
+
+    if (period === "This week") {
+        const day = now.getDay();
+        // Set to Monday of current week
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        const start = new Date(now.getFullYear(), now.getMonth(), diff, 0, 0, 0, 0);
+        const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000 + 23 * 3600000 + 59 * 60000 + 59999);
+        return { start: start.toISOString(), end: end.toISOString() };
+    }
+
+    if (period === "This month") {
+        return getInventoryOverviewDefaultRange();
+    }
+
+    if (period === "This year") {
+        const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+        return { start: start.toISOString(), end: end.toISOString() };
+    }
+
+    // "All time"
+    const start = new Date(2020, 0, 1, 0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start: start.toISOString(), end: end.toISOString() };
 }
 
 /** Formats a metric delta for display in overview cards. */

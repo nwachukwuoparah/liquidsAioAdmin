@@ -31,7 +31,7 @@ export const COMPLIANCE_FILTER_BLUEPRINTS: ComplianceFilterConfig[] = [
     },
     {
         id: "compliance_review_status",
-        label: "Review status",
+        label: "Status",
         defaultValue: "All statuses",
         options: ["All statuses", "Pending", "In review", "Approved", "Rejected"],
         icon: <RadioButtonIcon className="h-5 w-5 text-[#343330]" />,
@@ -40,7 +40,7 @@ export const COMPLIANCE_FILTER_BLUEPRINTS: ComplianceFilterConfig[] = [
         id: "dateRange",
         label: "Date range",
         defaultValue: "All time",
-        options: ["All time", "Today", "This week", "This month", "Last 30 days", "Custom range"],
+        options: ["All time", "Today", "This week", "This month", "Last 30 days", "Custom date"],
         icon: <CalendarDotsIcon className="h-5 w-5 text-[#343330]" />,
     },
 ];

@@ -45,7 +45,7 @@ describe("InventoryFiltersModal", () => {
         onClose.mockClear();
     });
 
-    it("renders the designed filter sections", () => {
+    it("renders the backend-supported filter sections", () => {
         render(
             <InventoryFiltersModal
                 initialParams={{}}
@@ -56,11 +56,17 @@ describe("InventoryFiltersModal", () => {
         );
 
         expect(screen.getByText("Filter")).toBeInTheDocument();
-        expect(screen.getByText("Seller status")).toBeInTheDocument();
+        expect(screen.queryByText("Seller status")).not.toBeInTheDocument();
+        expect(screen.queryByText("Location")).not.toBeInTheDocument();
+        expect(screen.getByText("Categories")).toBeInTheDocument();
+        expect(screen.getByText("Condition")).toBeInTheDocument();
+        expect(screen.getByText("Date posted")).toBeInTheDocument();
         expect(screen.getByText("Price range")).toBeInTheDocument();
         expect(screen.getByText("Lot status:")).toBeInTheDocument();
         expect(screen.getByText("All status")).toBeInTheDocument();
         expect(screen.getByText("Pending approval")).toBeInTheDocument();
+        expect(screen.getByText("In review")).toBeInTheDocument();
+        expect(screen.queryByText("Out-of-stock")).not.toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Reset all" })).toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Apply filter" })).toBeInTheDocument();
     });
@@ -75,24 +81,26 @@ describe("InventoryFiltersModal", () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole("button", { name: "Verified" }));
         fireEvent.change(screen.getByLabelText("Categories"), {
             target: { value: "Electronics" },
+        });
+        fireEvent.change(screen.getByLabelText("Condition"), {
+            target: { value: "Refurbished" },
         });
         fireEvent.change(screen.getByLabelText("Price range"), {
             target: { value: "$0 - $500" },
         });
-        fireEvent.click(screen.getByRole("button", { name: "Pending approval" }));
+        fireEvent.click(screen.getByRole("button", { name: "In review" }));
         fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
 
         expect(onApply).toHaveBeenCalledTimes(1);
         expect(onApply.mock.calls[0][0]).toEqual({
-            sellerStatus: "Verified",
             category: "elt",
+            condition: "refurbished",
             priceRange: "$0 - $500",
             min_price: "0",
             max_price: "500",
-            review_status: "pending",
+            review_status: "in_review",
         });
         expect(onClose).toHaveBeenCalledTimes(1);
     });
@@ -100,7 +108,7 @@ describe("InventoryFiltersModal", () => {
     it("resets all filters and closes the modal", () => {
         render(
             <InventoryFiltersModal
-                initialParams={{ category: "elt", sellerStatus: "Verified" }}
+                initialParams={{ category: "elt", condition: "refurbished" }}
                 onApply={onApply}
                 onReset={onReset}
                 onClose={onClose}

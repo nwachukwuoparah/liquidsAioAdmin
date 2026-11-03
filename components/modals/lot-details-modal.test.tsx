@@ -80,8 +80,8 @@ describe("LotDetailsModal", () => {
     it("replicates the designed lot details sections and actions", () => {
         renderWithQueryClient(<LotDetailsModal lotId="lot-1" />);
 
-        expect(screen.getByText("Lot details:")).toBeInTheDocument();
-        expect(screen.getAllByText("View listing").length).toBeGreaterThan(0);
+        expect(screen.getByText("Lot details")).toBeInTheDocument();
+        expect(screen.getAllByText("View lot").length).toBeGreaterThan(0);
         expect(screen.getByText(sampleDetail.title)).toBeInTheDocument();
         expect(screen.getByText(/High-quality consumer electronics/i)).toBeInTheDocument();
         expect(screen.getByText("Status: Pending")).toBeInTheDocument();

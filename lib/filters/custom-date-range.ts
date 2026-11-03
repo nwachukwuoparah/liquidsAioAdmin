@@ -1,11 +1,17 @@
 /** Label shown in date-range filter menus for picking an explicit interval. */
 export const CUSTOM_DATE_RANGE_OPTION = "Custom range";
+export const CUSTOM_DATE_OPTION = "Custom date";
+
+/** Returns whether a label is a custom date option ("Custom range" or "Custom date"). */
+export function isCustomDateRangeOption(value?: string | null): boolean {
+    return value === CUSTOM_DATE_RANGE_OPTION || value === CUSTOM_DATE_OPTION;
+}
 
 const CUSTOM_DATE_RANGE_PREFIX = "custom:";
 
 /** Returns whether a filter value represents an explicit custom date range. */
 export function isCustomDateRangeValue(value: string): boolean {
-    return value === CUSTOM_DATE_RANGE_OPTION || value.startsWith(CUSTOM_DATE_RANGE_PREFIX);
+    return isCustomDateRangeOption(value) || value.startsWith(CUSTOM_DATE_RANGE_PREFIX);
 }
 
 /** Encodes calendar dates into a filter value the API layer can parse. */
@@ -35,14 +41,14 @@ export function formatCustomDateRangeLabel(value: string): string {
     const parsed = parseCustomDateRange(value);
 
     if (!parsed) {
-        return CUSTOM_DATE_RANGE_OPTION;
+        return value === CUSTOM_DATE_OPTION ? CUSTOM_DATE_OPTION : CUSTOM_DATE_RANGE_OPTION;
     }
 
     const start = formatCalendarDateLabel(parsed.startDate);
     const end = formatCalendarDateLabel(parsed.endDate);
 
     if (!start || !end) {
-        return CUSTOM_DATE_RANGE_OPTION;
+        return value === CUSTOM_DATE_OPTION ? CUSTOM_DATE_OPTION : CUSTOM_DATE_RANGE_OPTION;
     }
 
     return `${start} – ${end}`;

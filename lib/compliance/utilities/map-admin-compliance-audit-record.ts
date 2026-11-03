@@ -281,16 +281,21 @@ function resolveDocumentCount(changeData?: AdminComplianceAuditChangeData | null
         return 0;
     }
 
+    let count = 0;
     if (Array.isArray(changeData.documents)) {
-        return changeData.documents.length;
+        count += changeData.documents.length;
     }
 
     if (Array.isArray(changeData.kyc?.kycDocuments)) {
-        return changeData.kyc.kycDocuments.length;
+        count += changeData.kyc.kycDocuments.length;
     }
 
     if (Array.isArray(changeData.kyb?.kybDocuments)) {
-        return changeData.kyb.kybDocuments.length;
+        count += changeData.kyb.kybDocuments.length;
+    }
+
+    if (count > 0) {
+        return count;
     }
 
     return changeData.document ? 1 : 0;
@@ -358,9 +363,104 @@ function collectDocumentSnapshots(
     return documents;
 }
 
+function extractComplianceFileId(
+    fileId?: string | null,
+    fileUrl?: string | null,
+    url?: string | null,
+    filePath?: string | null,
+): string {
+    const direct = fileId?.trim();
+    if (direct && !/^https?:\/\//i.test(direct)) {
+        return direct;
+    }
+
+    const candidates = [direct, fileUrl, url, filePath]
+        .map((candidate) => candidate?.trim())
+        .filter(Boolean) as string[];
+
+    for (const candidate of candidates) {
+        if (!/^https?:\/\//i.test(candidate)) {
+            return candidate;
+        }
+        const match = candidate.match(/compliance\/[^\s?#]+/i);
+        if (match) {
+            return match[0].replace(/\.(jpg|jpeg|png|webp|pdf)$/i, "");
+        }
+    }
+
+    return direct || "";
+}
+
+function resolveVerificationType(
+    document: AdminComplianceAuditDocumentSnapshot,
+    record?: AdminComplianceAuditLogApiRecord,
+): "kyc" | "kyb" {
+    if (document.kybId) {
+        return "kyb";
+    }
+    if (document.kycId) {
+        return "kyc";
+    }
+
+    const subject = (record?.subjectType ?? "").trim().toLowerCase();
+    if (subject.startsWith("kyb")) {
+        return "kyb";
+    }
+    if (subject.startsWith("kyc")) {
+        return "kyc";
+    }
+
+    if (record?.afterData?.kyb || record?.beforeData?.kyb) {
+        return "kyb";
+    }
+    if (record?.afterData?.kyc || record?.beforeData?.kyc) {
+        return "kyc";
+    }
+
+    const docType = (document.type ?? "").toLowerCase();
+    if (
+        ["ein", "tin", "business", "cac", "license", "w9", "state_business_license", "incorporation"].some((key) =>
+            docType.includes(key),
+        )
+    ) {
+        return "kyb";
+    }
+
+    return "kyc";
+}
+
+function resolveDocumentFormat(
+    document: AdminComplianceAuditDocumentSnapshot,
+    fileId: string,
+): string {
+    if (document.format?.trim()) {
+        return document.format.trim().toLowerCase();
+    }
+
+    const candidates = [
+        document.originalFilename,
+        document.originalFileName,
+        fileId,
+        document.fileUrl,
+        document.url,
+    ];
+
+    for (const candidate of candidates) {
+        if (!candidate) continue;
+        const lower = candidate.toLowerCase();
+        if (lower.endsWith(".pdf")) return "pdf";
+        if (lower.endsWith(".png")) return "png";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "jpg";
+        if (lower.endsWith(".webp")) return "webp";
+    }
+
+    return "jpg";
+}
+
 function mapDocumentPreview(
     document: AdminComplianceAuditDocumentSnapshot,
     index: number,
+    record?: AdminComplianceAuditLogApiRecord,
 ): AdminComplianceAuditDocumentPreview | null {
     const absoluteUrlCandidates = [
         document.fileUrl?.trim(),
@@ -368,14 +468,24 @@ function mapDocumentPreview(
         document.filePath?.trim(),
     ].filter((value): value is string => Boolean(value && /^https?:\/\//i.test(value)));
 
+    const extractedFileId = extractComplianceFileId(
+        document.fileId,
+        document.fileUrl,
+        document.url,
+        document.filePath,
+    );
+
     const publicId =
+        extractedFileId ||
         document.fileId?.trim() ||
         [document.fileUrl, document.url, document.filePath]
             .map((value) => value?.trim())
             .find((value) => Boolean(value) && !/^https?:\/\//i.test(value ?? "")) ||
         "";
 
-    const format = (document.format ?? "").trim();
+    const format = resolveDocumentFormat(document, publicId);
+    const verificationType = resolveVerificationType(document, record);
+
     const previewCandidates = [
         ...absoluteUrlCandidates,
         ...buildComplianceDocumentPreviewCandidates(publicId, format),
@@ -390,7 +500,7 @@ function mapDocumentPreview(
         uniqueCandidates[0] ||
         "";
 
-    if (!previewUrl) {
+    if (!previewUrl && !publicId) {
         return null;
     }
 
@@ -409,6 +519,13 @@ function mapDocumentPreview(
         openUrl: uniqueCandidates.find((url) => url !== previewUrl) || previewUrl,
         previewCandidates: uniqueCandidates.length > 0 ? uniqueCandidates : [previewUrl],
         isImage: isImageDocumentFormat(format) || Boolean(previewUrl),
+        fileId: publicId || undefined,
+        verificationType,
+        bytes: document.bytes,
+        type: (document.type ?? "").trim(),
+        originalFilename: filename,
+        rejectionReason: document.rejectionReason,
+        createdAt: document.createdAt,
     };
 }
 
@@ -533,7 +650,7 @@ export function mapAdminComplianceAuditLogRecord(
     const assigneeName = resolveAssigneeName(afterData) || resolveAssigneeName(beforeData);
     const reviewedAt = resolveReviewedAt(afterData) || resolveReviewedAt(beforeData);
     const documents = collectDocumentSnapshots(record, afterData, beforeData)
-        .map((document, documentIndex) => mapDocumentPreview(document, documentIndex))
+        .map((document, documentIndex) => mapDocumentPreview(document, documentIndex, record))
         .filter((document): document is AdminComplianceAuditDocumentPreview => Boolean(document));
     const documentCount = Math.max(
         documents.length,

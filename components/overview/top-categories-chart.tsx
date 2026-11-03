@@ -142,14 +142,14 @@ export default function TopCategoriesChart({ categoryData }: { categoryData?: Ca
                     </PieChart>
                 </ResponsiveContainer>
 
-                {activeItem && (
+                {(activeItem ?? data[0]) && (
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                        <div className="rounded-lg border border-[#0B0E0514] bg-[#FFFFFF] px-4 py-2 text-center shadow-card">
+                        <div className="rounded-xl border border-[#0B0E0514] bg-[#FFFFFF] px-4 py-2 text-center shadow-card">
                             <Typography type="text12" fontWeight={600} className="text-slate-800">
-                                {activeItem.name}
+                                {(activeItem ?? data[0]).name}
                             </Typography>
                             <Typography type="text12" fontWeight={500} className="text-slate-500">
-                                {formatPercent(activeItem.value)}
+                                {formatPercent((activeItem ?? data[0]).value)}
                             </Typography>
                         </div>
                     </div>

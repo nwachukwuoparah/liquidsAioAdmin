@@ -23,6 +23,10 @@ import {
     PANEL_CARD_SHELL_CLASS,
     STAT_CARD_CLASS,
 } from "@/lib/card-styles";
+import {
+    getSampleAdminOverviewCharts,
+    getSampleAdminOverviewDashboard,
+} from "@/lib/admin/mock-data/sample-admin-data";
 import { ArrowSquareOutIcon, ArrowsClockwiseIcon, CloudArrowDownIcon } from "@/components/vector";
 
 function OverviewStatCard({
@@ -33,6 +37,7 @@ function OverviewStatCard({
     footer?: string;
 }) {
     const Icon = getAdminIconComponent(stat.iconKey);
+    const changeMatch = stat.change ? stat.change.match(/^([+-]?\d+(?:\.\d+)?%)\s*(.*)$/) : null;
 
     return (
         <div className={`${STAT_CARD_CLASS} p-5`}>
@@ -44,12 +49,23 @@ function OverviewStatCard({
                     <Icon className={`h-5 w-5 ${stat.iconColor ?? ""}`} />
                 </div>
             </div>
-            <div className="mt-3 flex flex-col gap-0">
+            <div className="mt-3 flex flex-col gap-1">
                 <Typography type="text14" fontWeight={500} className="truncate leading-tight text-[#0B0E05A3]">
                     {stat.label}
                 </Typography>
-                {footer ? (
-                    <Typography type="text12" fontWeight={500} className={`leading-tight ${stat.changeColor}`}>
+                {stat.change ? (
+                    <Typography type="text12" fontWeight={500} className="leading-tight">
+                        {changeMatch ? (
+                            <>
+                                <span className={stat.changeColor ?? "text-[#00A341]"}>{changeMatch[1]}</span>{" "}
+                                <span className="text-[#0B0E05A3]">{changeMatch[2]}</span>
+                            </>
+                        ) : (
+                            <span className={stat.changeColor ?? "text-[#00A341]"}>{stat.change}</span>
+                        )}
+                    </Typography>
+                ) : footer ? (
+                    <Typography type="text12" fontWeight={500} className="leading-tight text-[#0B0E05A3]">
                         {footer}
                     </Typography>
                 ) : null}
@@ -62,11 +78,13 @@ export default function OverviewPage() {
     const [quickStatsPeriod, setQuickStatsPeriod] = useState<PeriodOption>("This month");
     const [engagementStatsPeriod, setEngagementStatsPeriod] = useState<PeriodOption>("This month");
     const overviewQuery = useAdminOverview(quickStatsPeriod);
-    const dashboard = overviewQuery.data?.dashboard;
-    const charts = overviewQuery.data?.charts;
-    const quickStats = dashboard?.quickStats ?? [];
-    const engagementStats = dashboard?.engagementStats ?? [];
-    const activityFeed = dashboard?.activityFeed ?? [];
+    const sampleDashboard = getSampleAdminOverviewDashboard();
+    const sampleCharts = getSampleAdminOverviewCharts(quickStatsPeriod);
+    const dashboard = overviewQuery.data?.dashboard ?? sampleDashboard;
+    const charts = overviewQuery.data?.charts ?? sampleCharts;
+    const quickStats = dashboard?.quickStats?.length ? dashboard.quickStats : sampleDashboard.quickStats;
+    const engagementStats = dashboard?.engagementStats?.length ? dashboard.engagementStats : sampleDashboard.engagementStats;
+    const activityFeed = dashboard?.activityFeed?.length ? dashboard.activityFeed : sampleDashboard.activityFeed;
 
     return (
         <div className="mx-auto w-full space-y-8 p-5">
@@ -120,7 +138,7 @@ export default function OverviewPage() {
                 {overviewQuery.isLoading ? (
                     <StatCardsSkeleton count={5} columnsClassName="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" />
                 ) : (
-                    <AdminQueryState isError={overviewQuery.isError} onRetry={() => void overviewQuery.refetch()}>
+                    <AdminQueryState isError={overviewQuery.isError && quickStats.length === 0} onRetry={() => void overviewQuery.refetch()}>
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                             {quickStats.map((stat) => (
                                 <OverviewStatCard
@@ -184,7 +202,7 @@ export default function OverviewPage() {
                         </Typography>
                     </div>
 
-                    <AdminQueryState isError={overviewQuery.isError} onRetry={() => void overviewQuery.refetch()}>
+                    <AdminQueryState isError={overviewQuery.isError && activityFeed.length === 0} onRetry={() => void overviewQuery.refetch()}>
                         <AdminAsyncContent
                             isLoading={overviewQuery.isLoading}
                             isEmpty={activityFeed.length === 0}
@@ -203,29 +221,27 @@ export default function OverviewPage() {
                                     return (
                                         <div
                                             key={activity.id}
-                                            className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-slate-50/50"
+                                            className="flex items-center justify-between px-6 py-3.5 transition-colors hover:bg-slate-50/50"
                                         >
-                                            <div className="flex min-w-0 items-start gap-4">
-                                                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${activity.iconBg}`}>
-                                                    <Icon className={`h-5 w-5 ${activity.iconColor}`} />
+                                            <div className="flex min-w-0 items-start gap-3.5">
+                                                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${activity.iconBg}`}>
+                                                    <Icon className={`h-4 w-4 ${activity.iconColor}`} />
                                                 </div>
-                                                <div className="flex flex-col space-y-1">
-                                                    <Typography type="text16" fontWeight={700} className="block text-[#0B0E05]">
-                                                        {activity.title}
+                                                <div className="flex flex-col gap-0.5">
+                                                    <Typography type="text14" className="text-[#0B0E05]">
+                                                        <span className="font-bold">{activity.title}</span>{" "}
+                                                        <span className="font-normal text-[#0B0E05]">{activity.subtitle}</span>
                                                     </Typography>
-                                                    <Typography type="text14" fontWeight={400} className="block text-[#0B0E05A3]">
-                                                        {activity.subtitle}
-                                                    </Typography>
-                                                    <Typography type="text14" fontWeight={400} className="block text-[#0B0E05A3]">
+                                                    <Typography type="text12" fontWeight={400} className="text-[#0B0E05A3]">
                                                         {activity.time}
                                                     </Typography>
                                                 </div>
                                             </div>
                                             <button
                                                 type="button"
-                                                className="ml-4 shrink-0 rounded-lg p-2 transition-colors hover:bg-slate-100"
+                                                className="ml-4 shrink-0 rounded-lg p-1.5 transition-colors hover:bg-slate-100"
                                             >
-                                                <ArrowSquareOutIcon className="h-5 w-5 text-[#343330]" />
+                                                <ArrowSquareOutIcon className="h-4 w-4 text-[#343330]" />
                                             </button>
                                         </div>
                                     );

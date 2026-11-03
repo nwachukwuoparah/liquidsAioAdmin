@@ -3,11 +3,13 @@
 import { FormFilterDropdownField } from "@/components/form/form-filter-dropdown-field";
 import Typography from "@/components/typography";
 import { ModalCloseIcon } from "@/components/vector";
-import { INVENTORY_REVIEW_STATUS_LABELS } from "@/lib/inventory/constants/admin-inventory-api.constant";
+import {
+    INVENTORY_CATEGORY_CODE_TO_LABEL,
+    INVENTORY_CONDITION_VALUE_TO_LABEL,
+    INVENTORY_REVIEW_STATUS_LABELS,
+} from "@/lib/inventory/constants/admin-inventory-api.constant";
 import { applyInventoryFilterChange } from "@/lib/inventory/utilities/apply-inventory-filter-change";
 import { useMemo, useState } from "react";
-
-const SELLER_STATUS_OPTIONS = ["All sellers", "Verified", "Unverified"] as const;
 
 const CATEGORY_OPTIONS = [
     { value: "All categories", label: "All categories" },
@@ -15,23 +17,24 @@ const CATEGORY_OPTIONS = [
     { value: "Apparel & Footwear", label: "Apparel & Footwear" },
     { value: "Home & Kitchen", label: "Home & Kitchen" },
     { value: "Health & Beauty", label: "Health & Beauty" },
+    { value: "General Merchandise", label: "General Merchandise" },
+    { value: "Toys & Baby", label: "Toys & Baby" },
 ] as const;
 
 const CONDITION_OPTIONS = [
     { value: "All conditions", label: "All conditions" },
     { value: "New", label: "New" },
+    { value: "Refurbished", label: "Refurbished" },
     { value: "Mixed", label: "Mixed" },
     { value: "Overstock", label: "Overstock" },
-] as const;
-
-const LOCATION_OPTIONS = [
-    { value: "All locations", label: "All locations" },
 ] as const;
 
 const DATE_POSTED_OPTIONS = [
     { value: "All time", label: "All time" },
     { value: "Today", label: "Today" },
     { value: "This week", label: "This week" },
+    { value: "This month", label: "This month" },
+    { value: "Custom date", label: "Custom date" },
 ] as const;
 
 const PRICE_RANGE_OPTIONS = [
@@ -47,63 +50,16 @@ const LOT_STATUS_OPTIONS = [
     "All status",
     "Active",
     "Pending approval",
+    "In review",
     "Rejected",
-    "Out-of-stock",
     "Suspended",
 ] as const;
-
-const CATEGORY_CODE_TO_LABEL: Record<string, string> = {
-    elt: "Electronics",
-    afw: "Apparel & Footwear",
-    hkn: "Home & Kitchen",
-    hby: "Health & Beauty",
-};
-
-const CONDITION_VALUE_TO_LABEL: Record<string, string> = {
-    new: "New",
-    mixed: "Mixed",
-    overstock: "Overstock",
-};
 
 interface InventoryFiltersModalProps {
     initialParams: Record<string, string>;
     onApply: (nextParams: Record<string, string>) => void;
     onReset: () => void;
     onClose: () => void;
-}
-
-function RadioOption({
-    label,
-    selected,
-    onSelect,
-}: {
-    label: string;
-    selected: boolean;
-    onSelect: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onSelect}
-            className="flex w-full items-center gap-3 py-1.5 text-left"
-            aria-pressed={selected}
-        >
-            <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                    selected ? "border-[#518300]" : "border-[#0B0E0529]"
-                }`}
-            >
-                {selected ? <span className="h-2.5 w-2.5 rounded-full bg-[#518300]" /> : null}
-            </span>
-            <Typography
-                type="text14"
-                fontWeight={selected ? 600 : 500}
-                className={selected ? "text-[#0B0E05]" : "text-[#0B0E05CC]"}
-            >
-                {label}
-            </Typography>
-        </button>
-    );
 }
 
 function LotStatusChip({
@@ -152,19 +108,13 @@ function resolveDraftSelections(params: Record<string, string>) {
     let lotStatus: (typeof LOT_STATUS_OPTIONS)[number] = "All status";
     if (reviewStatusLabel === "Active") lotStatus = "Active";
     else if (reviewStatusLabel === "Pending") lotStatus = "Pending approval";
+    else if (reviewStatusLabel === "In review") lotStatus = "In review";
     else if (reviewStatusLabel === "Declined") lotStatus = "Rejected";
     else if (reviewStatusLabel === "Suspended") lotStatus = "Suspended";
 
-    const sellerStatus =
-        params.sellerStatus === "Verified" || params.sellerStatus === "Unverified"
-            ? params.sellerStatus
-            : "All sellers";
-
     return {
-        sellerStatus,
-        category: CATEGORY_CODE_TO_LABEL[params.category ?? ""] ?? "All categories",
-        condition: CONDITION_VALUE_TO_LABEL[params.condition ?? ""] ?? "All conditions",
-        location: params.location ?? "All locations",
+        category: INVENTORY_CATEGORY_CODE_TO_LABEL[params.category ?? ""] ?? "All categories",
+        condition: INVENTORY_CONDITION_VALUE_TO_LABEL[params.condition ?? ""] ?? "All conditions",
         datePosted: params.datePosted ?? "All time",
         priceRange: params.priceRange ?? "All prices",
         lotStatus,
@@ -214,27 +164,6 @@ export default function InventoryFiltersModal({
 
             <div className="flex-1 overflow-y-auto px-4 py-5">
                 <div className="space-y-6">
-                    <div className="space-y-2">
-                        <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">
-                            Seller status
-                        </Typography>
-                        <div className="space-y-1">
-                            {SELLER_STATUS_OPTIONS.map((option) => (
-                                <RadioOption
-                                    key={option}
-                                    label={option}
-                                    selected={selections.sellerStatus === option}
-                                    onSelect={() =>
-                                        updateDraft(
-                                            "sellerStatus",
-                                            option === "All sellers" ? "All" : option,
-                                        )
-                                    }
-                                />
-                            ))}
-                        </div>
-                    </div>
-
                     <FormFilterDropdownField
                         label="Categories"
                         value={selections.category}
@@ -252,21 +181,11 @@ export default function InventoryFiltersModal({
                     />
 
                     <FormFilterDropdownField
-                        label="Location"
-                        value={selections.location}
-                        options={[...LOCATION_OPTIONS]}
-                        onChange={(value) => updateDraft("location", value)}
-                        isSearchable
-                        isPlacesAutocomplete
-                        searchPlaceholder="Search location..."
-                        testId="inventory-filter-location"
-                    />
-
-                    <FormFilterDropdownField
                         label="Date posted"
                         value={selections.datePosted}
                         options={[...DATE_POSTED_OPTIONS]}
                         onChange={(value) => updateDraft("datePosted", value)}
+                        customRangeKind="date"
                         testId="inventory-filter-date-posted"
                     />
 

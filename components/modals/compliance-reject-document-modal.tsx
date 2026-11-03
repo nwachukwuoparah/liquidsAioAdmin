@@ -36,7 +36,7 @@ export default function ComplianceRejectDocumentModal({
     document,
     verificationType,
 }: ComplianceRejectDocumentModalProps) {
-    const { closeModal } = useModal();
+    const { closeModal, hideAllModals } = useModal();
     const rejectReview = useAdminComplianceReviewReject();
     const {
         register,
@@ -69,7 +69,13 @@ export default function ComplianceRejectDocumentModal({
                         setError("rejectionReason", { message: error.message });
                     }
                 },
-                onSuccess: () => closeModal(),
+                onSuccess: () => {
+                    if (typeof hideAllModals === "function") {
+                        hideAllModals();
+                    } else {
+                        closeModal();
+                    }
+                },
             },
         );
     });

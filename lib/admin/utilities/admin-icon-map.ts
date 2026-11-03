@@ -9,6 +9,7 @@ import {
     FlagIcon,
     HandCoinsIcon,
     HourglassIcon,
+    ProfileUserIcon,
     ShoppingCartIcon,
     StorefrontIcon,
     ThumbsUpIcon,
@@ -18,6 +19,7 @@ import {
     UserMinusIcon,
     UserPlusIcon,
     UsersGroupIcon,
+    UsersIcon,
     UserSwitchIcon,
     WarningIcon,
     XCircleIcon,
@@ -44,6 +46,8 @@ const ADMIN_ICON_MAP: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
     clock: ClockIcon,
     userMinus: UserMinusIcon,
     userSwitch: UserSwitchIcon,
+    profileUser: ProfileUserIcon,
+    users: UsersIcon,
     bell: BellIcon,
 };
 

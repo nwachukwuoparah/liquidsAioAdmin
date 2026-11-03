@@ -6,9 +6,7 @@ import {
     CheckCircleIcon,
     CurrencyDollarIcon,
     FlagIcon,
-    MapPinIcon,
     RadioButtonIcon,
-    ShieldIcon,
     SlidersHorizontalIcon,
     StorefrontIcon,
     TagIcon,
@@ -24,18 +22,22 @@ import SearchInput from "@/components/search-input";
 import { TablePagination } from "@/components/table-pagination";
 import { AdminAsyncContent, DataTableSkeleton, ListRowsSkeleton, StatCardsSkeleton } from "@/components/skeletons";
 import { useModal } from "@/context/modal-provider";
+import PeriodDropdown, { type PeriodOption } from "@/components/period-dropdown";
 import { formatCount } from "@/lib/format-count";
 import Typography from '@/components/typography';
 import { useAdminInventoryLots, useAdminInventoryOverview, useAdminInventoryTabCounts } from "@/lib/admin/hooks";
 import {
     formatInventoryOverviewDelta,
+    getInventoryOverviewRange,
     INVENTORY_OVERVIEW_STAT_CARDS,
 } from "@/lib/admin/constants/admin-inventory-overview.constant";
 import { getAdminIconComponent } from "@/lib/admin/utilities/admin-icon-map";
 import {
     ADMIN_INVENTORY_DEFAULT_PAGE_LIMIT,
+    INVENTORY_CATEGORY_CODE_TO_LABEL,
     INVENTORY_CATEGORY_LABEL_TO_CODE,
     INVENTORY_CONDITION_LABEL_TO_VALUE,
+    INVENTORY_CONDITION_VALUE_TO_LABEL,
     INVENTORY_REVIEW_STATUS_LABELS,
 } from "@/lib/inventory/constants/admin-inventory-api.constant";
 import {
@@ -53,7 +55,7 @@ function resolveInventoryCategoryLabel(code?: string): string | undefined {
         return undefined;
     }
 
-    return Object.entries(INVENTORY_CATEGORY_LABEL_TO_CODE).find(([, value]) => value === code)?.[0];
+    return INVENTORY_CATEGORY_CODE_TO_LABEL[code] ?? Object.entries(INVENTORY_CATEGORY_LABEL_TO_CODE).find(([, value]) => value === code)?.[0];
 }
 
 function resolveInventoryConditionLabel(value?: string): string | undefined {
@@ -61,7 +63,7 @@ function resolveInventoryConditionLabel(value?: string): string | undefined {
         return undefined;
     }
 
-    return Object.entries(INVENTORY_CONDITION_LABEL_TO_VALUE).find(([, apiValue]) => apiValue === value)?.[0];
+    return INVENTORY_CONDITION_VALUE_TO_LABEL[value] ?? Object.entries(INVENTORY_CONDITION_LABEL_TO_VALUE).find(([, apiValue]) => apiValue === value)?.[0];
 }
 
 function renderLotThumbnail(lot: { img: string; alert?: boolean }, sizeClassName: string) {
@@ -90,6 +92,7 @@ export default function AllLotsContentSection() {
     const [actionMenuId, setActionMenuId] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(ADMIN_INVENTORY_DEFAULT_PAGE_LIMIT);
+    const [overviewPeriod, setOverviewPeriod] = useState<PeriodOption>("This week");
 
     const lotsQueryParams = useMemo(
         () =>
@@ -102,11 +105,32 @@ export default function AllLotsContentSection() {
         [activeTab, filterParams, page, pageSize, searchQuery],
     );
 
+    const overviewRange = useMemo(
+        () => getInventoryOverviewRange(overviewPeriod),
+        [overviewPeriod],
+    );
+
     const inventoryLotsQuery = useAdminInventoryLots(lotsQueryParams);
-    const inventoryOverviewQuery = useAdminInventoryOverview();
+    const inventoryOverviewQuery = useAdminInventoryOverview(overviewRange);
     const inventoryTabCountsQuery = useAdminInventoryTabCounts();
     const lotsData = inventoryLotsQuery.data?.results ?? [];
     const totalLotsCount = inventoryLotsQuery.data?.totalCount ?? lotsData.length;
+
+    const displayLots = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return lotsData;
+        }
+        const term = searchQuery.trim().toLowerCase();
+        return lotsData.filter((lot) =>
+            lot.title.toLowerCase().includes(term) ||
+            lot.seller.toLowerCase().includes(term) ||
+            lot.cat.toLowerCase().includes(term) ||
+            lot.cond.toLowerCase().includes(term) ||
+            lot.status.toLowerCase().includes(term) ||
+            lot.id.toLowerCase().includes(term)
+        );
+    }, [lotsData, searchQuery]);
+
     const inventoryOverview = inventoryOverviewQuery.data;
     const tabCounts = inventoryTabCountsQuery.tabCounts;
     const allLotsCount =
@@ -158,12 +182,10 @@ export default function AllLotsContentSection() {
     );
 
     const filterBlueprints: FilterConfig[] = [
-        { id: 'status', label: 'Lot Status', defaultValue: 'All statuses', options: ['All statuses', 'Active', 'Pending', 'Declined', 'Suspended', 'Out-of-Stock'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'sellerStatus', label: 'Seller status', defaultValue: 'All', options: ['All', 'Verified', 'Unverified'], icon: <ShieldIcon className="h-4 w-[15px] shrink-0 text-[#343330]" /> },
-        { id: 'category', label: 'Category', defaultValue: 'All categories', options: ['All categories', 'Electronics', 'Apparel & Footwear', 'Home & Kitchen', 'Health & Beauty'], icon: <TagIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'condition', label: 'Condition', defaultValue: 'All conditions', options: ['All conditions', 'New', 'Mixed', 'Overstock'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'location', label: 'Location', defaultValue: 'All locations', isSearchable: true, isPlacesAutocomplete: true, searchPlaceholder: 'Search location...', options: ['All locations'], icon: <MapPinIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'datePosted', label: 'Date posted', defaultValue: 'All time', options: ['All time', 'Today', 'This week'], icon: <CalendarDotsIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'status', label: 'Lot Status', defaultValue: 'All statuses', options: ['All statuses', 'Active', 'Pending', 'In review', 'Declined', 'Suspended'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'category', label: 'Category', defaultValue: 'All categories', options: ['All categories', 'Electronics', 'Apparel & Footwear', 'Home & Kitchen', 'Health & Beauty', 'General Merchandise', 'Toys & Baby'], icon: <TagIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'condition', label: 'Condition', defaultValue: 'All conditions', options: ['All conditions', 'New', 'Refurbished', 'Mixed', 'Overstock'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'datePosted', label: 'Date posted', defaultValue: 'All time', customRangeKind: 'date', options: ['All time', 'Today', 'This week', 'This month', 'Custom date'], icon: <CalendarDotsIcon className={FILTER_ICON_CLASS} /> },
         { id: 'priceRange', label: 'Price range', defaultValue: 'All prices', customRangeKind: 'price', options: ['All prices', '$0 - $500', '$500 - $2,000', '$2,000 - $10,000', 'Over $10,000', 'Custom range'], icon: <CurrencyDollarIcon className={FILTER_ICON_CLASS} /> },
     ];
 
@@ -172,10 +194,8 @@ export default function AllLotsContentSection() {
             status: filterParams.review_status
                 ? INVENTORY_REVIEW_STATUS_LABELS[filterParams.review_status]
                 : undefined,
-            sellerStatus: filterParams.sellerStatus,
             category: resolveInventoryCategoryLabel(filterParams.category),
             condition: resolveInventoryConditionLabel(filterParams.condition),
-            location: filterParams.location,
             datePosted: filterParams.datePosted,
             priceRange: filterParams.priceRange,
         }),
@@ -227,9 +247,12 @@ export default function AllLotsContentSection() {
 
             {/* OVERVIEW STATS ROW */}
             <div className="space-y-3 px-4 md:px-0">
-                <Typography type="text14" fontWeight={700} className="text-[#0B0E05] block">
-                    Overview
-                </Typography>
+                <div className="flex items-center justify-between">
+                    <Typography type="text14" fontWeight={700} className="text-[#0B0E05] block">
+                        Overview
+                    </Typography>
+                    <PeriodDropdown value={overviewPeriod} onChange={setOverviewPeriod} />
+                </div>
                 {inventoryOverviewQuery.isLoading ? (
                     <StatCardsSkeleton count={4} columnsClassName="grid grid-cols-2 lg:grid-cols-4 gap-3.5" />
                 ) : (
@@ -268,7 +291,7 @@ export default function AllLotsContentSection() {
                                     ) : null}
                                     <Typography type="text12" fontWeight={600} className="text-[#0B0E05A3]">
                                         <span className={`font-semibold ${card.deltaClassName}`}>{card.deltaText}</span>{" "}
-                                        this month
+                                        {overviewPeriod.toLowerCase()}
                                     </Typography>
                                 </div>
                             </div>
@@ -339,11 +362,11 @@ export default function AllLotsContentSection() {
                 <div className="flex flex-col gap-3 px-4 pb-6 pt-4">
                     <AdminAsyncContent
                         isLoading={inventoryLotsQuery.isLoading}
-                        isEmpty={lotsData.length === 0}
+                        isEmpty={displayLots.length === 0}
                         loadingFallback={<ListRowsSkeleton rows={5} />}
                         emptyFallback={<EmptyState title="No lots found" />}
                     >
-                    {lotsData.map((lot) => (
+                    {displayLots.map((lot) => (
                         <div
                             key={lot.id}
                             data-testid="mobile-lot-card"
@@ -500,7 +523,7 @@ export default function AllLotsContentSection() {
                         <tbody className="divide-y divide-[#0B0E0514]  bg-[#FFFFFF]">
                             <AdminAsyncContent
                                 isLoading={inventoryLotsQuery.isLoading}
-                                isEmpty={lotsData.length === 0}
+                                isEmpty={displayLots.length === 0}
                                 loadingFallback={
                                     <tr>
                                         <td colSpan={10}>
@@ -516,7 +539,7 @@ export default function AllLotsContentSection() {
                                     </tr>
                                 }
                             >
-                            {lotsData.map((lot, index) => (
+                            {displayLots.map((lot, index) => (
                                 <tr key={lot.id} className="transition-colors hover:bg-[#0B0E050A]">
                                     <td className="py-3.5 pl-6 pr-2 text-center">
                                         <Typography type="text12" fontWeight={700} className="text-[#0B0E05A3]">
@@ -602,7 +625,7 @@ export default function AllLotsContentSection() {
                     <TablePagination
                         page={page}
                         pageSize={pageSize}
-                        totalCount={totalLotsCount}
+                        totalCount={searchQuery.trim() ? displayLots.length : totalLotsCount}
                         onPageChange={handlePageChange}
                         onPageSizeChange={handlePageSizeChange}
                         disabled={inventoryLotsQuery.isFetching}

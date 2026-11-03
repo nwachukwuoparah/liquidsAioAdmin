@@ -33,7 +33,7 @@ describe("ComplianceActionMenu", () => {
         expect(onToggle).toHaveBeenCalledTimes(1);
     });
 
-    it("shows view, approve, and reject actions when open", () => {
+    it("shows only view detail action when open and omits approve/reject", () => {
         render(
             <ComplianceActionMenu
                 userId="review-1"
@@ -46,9 +46,9 @@ describe("ComplianceActionMenu", () => {
 
         expect(screen.getByTestId("compliance-action-menu")).toBeInTheDocument();
         expect(screen.getByText("View detail")).toBeInTheDocument();
+        expect(screen.queryByText("Approve")).not.toBeInTheDocument();
+        expect(screen.queryByText("Reject")).not.toBeInTheDocument();
         expect(screen.queryByText("Request update")).not.toBeInTheDocument();
-        expect(screen.getByText("Approve")).toBeInTheDocument();
-        expect(screen.getByText("Reject")).toBeInTheDocument();
     });
 
     it("opens the compliance details modal from view detail", () => {
@@ -65,25 +65,6 @@ describe("ComplianceActionMenu", () => {
         );
 
         fireEvent.click(screen.getByText("View detail"));
-
-        expect(onClose).toHaveBeenCalledTimes(1);
-        expect(showModalMock).toHaveBeenCalledTimes(1);
-    });
-
-    it("opens the reject review modal from the menu", () => {
-        const onClose = vi.fn();
-
-        render(
-            <ComplianceActionMenu
-                userId="review-1"
-                accountType="Buyer"
-                isOpen={true}
-                onToggle={vi.fn()}
-                onClose={onClose}
-            />,
-        );
-
-        fireEvent.click(screen.getByText("Reject"));
 
         expect(onClose).toHaveBeenCalledTimes(1);
         expect(showModalMock).toHaveBeenCalledTimes(1);

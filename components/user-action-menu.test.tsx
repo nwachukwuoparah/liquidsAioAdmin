@@ -2,6 +2,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import UserActionMenu from "./user-action-menu";
 
+vi.mock("@/context/modal-provider", () => ({
+    useModal: () => ({
+        showModal: vi.fn(),
+        closeModal: vi.fn(),
+    }),
+}));
+
 describe("UserActionMenu", () => {
     it("opens the menu when the trigger is clicked", () => {
         const onToggle = vi.fn();

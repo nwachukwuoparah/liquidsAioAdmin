@@ -110,11 +110,6 @@ export function applyInventoryFilterChange(
         return updatedParams;
     }
 
-    if (filterId === "location" || filterId === "sellerStatus") {
-        updatedParams[filterId] = value;
-        return updatedParams;
-    }
-
     updatedParams[filterId] = value.toLowerCase().trim();
     return updatedParams;
 }
@@ -128,8 +123,6 @@ export function countActiveInventoryFilters(filterParams: Record<string, string>
     if (filterParams.condition) count++;
     if (filterParams.start || filterParams.end) count++;
     if (filterParams.min_price || filterParams.max_price) count++;
-    if (filterParams.location) count++;
-    if (filterParams.sellerStatus) count++;
 
     return count;
 }
