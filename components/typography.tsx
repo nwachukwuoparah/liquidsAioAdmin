@@ -8,7 +8,7 @@ interface ThemedTextProps {
     onClick?: () => void;
     children: React.ReactNode;
     className?: string;
-    type?: "text12" | "text14" | "text16" | "text20" | "text24" | "text28" | "text32" | "text48";
+    type?: "text12" | "text14" | "text16" | "text18" | "text20" | "text24" | "text28" | "text32" | "text48";
     fontWeight?: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
     italic?: boolean;
     usemomo?: boolean;
@@ -23,6 +23,7 @@ const typeClasses: Record<string, string> = {
     text12: "text-[12px]",
     text14: "text-[14px]",
     text16: "text-[16px]",
+    text18: "text-[18px]",
     text20: "text-[20px]",
     text24: "text-[24px]",
     text28: "text-[28px]",

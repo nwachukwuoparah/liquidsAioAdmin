@@ -26,18 +26,21 @@ import {
 
 describe("access-token-refresh-logger", () => {
     const originalNodeEnv = process.env.NODE_ENV;
+    const setNodeEnv = (value: string | undefined) => {
+        (process.env as Record<string, string | undefined>).NODE_ENV = value;
+    };
 
     beforeEach(() => {
         vi.spyOn(console, "log").mockImplementation(() => undefined);
     });
 
     afterEach(() => {
-        process.env.NODE_ENV = originalNodeEnv;
+        setNodeEnv(originalNodeEnv);
         vi.restoreAllMocks();
     });
 
     it("does not log outside development", () => {
-        process.env.NODE_ENV = "test";
+        setNodeEnv("test");
 
         logRefreshInitiated(ACCESS_TOKEN_REFRESH_REASON.BOOTSTRAP);
 
@@ -45,7 +48,7 @@ describe("access-token-refresh-logger", () => {
     });
 
     it("logs initiation with info styling in development", () => {
-        process.env.NODE_ENV = "development";
+        setNodeEnv("development");
 
         logRefreshInitiated(ACCESS_TOKEN_REFRESH_REASON.REQUEST_INTERCEPTOR, {
             hasStoredAccessToken: true,
@@ -60,7 +63,7 @@ describe("access-token-refresh-logger", () => {
     });
 
     it("logs queue, schedule, and resume stages with queue styling", () => {
-        process.env.NODE_ENV = "development";
+        setNodeEnv("development");
 
         logRefreshRequestQueued(2);
         logRefreshScheduled(120_000);
@@ -87,7 +90,7 @@ describe("access-token-refresh-logger", () => {
     });
 
     it("logs API, token resolution, and success stages", () => {
-        process.env.NODE_ENV = "development";
+        setNodeEnv("development");
 
         logRefreshApiRequestStarted("https://example.com/v1/auth/admin/refresh");
         logRefreshApiResponseReceived(200, { ok: true });
@@ -123,7 +126,7 @@ describe("access-token-refresh-logger", () => {
     });
 
     it("logs failures and logout with error styling", () => {
-        process.env.NODE_ENV = "development";
+        setNodeEnv("development");
         const refreshError = new Error("network down");
 
         logRefreshFailed("Refresh network request failed", refreshError);

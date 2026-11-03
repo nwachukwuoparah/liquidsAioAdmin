@@ -21,6 +21,7 @@ import type {
     FetchAdminComplianceReviewsPageParams,
 } from "@/lib/compliance/types/admin-compliance-api.types";
 import type {
+    AdminComplianceAuditLogApiRecord,
     AdminComplianceAuditLogRecord,
     AdminComplianceAuditLogsResponseBody,
     FetchAdminComplianceAuditLogsPageParams,

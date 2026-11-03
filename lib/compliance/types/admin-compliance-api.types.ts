@@ -5,10 +5,15 @@ export interface AdminComplianceApiCursor {
 
 export interface AdminComplianceAssigneeProfile {
     id?: string;
+    userId?: string;
+    assignedAdminId?: string | null;
+    status?: string;
     firstName?: string;
     lastName?: string;
     email?: string;
     profilePicture?: string | null;
+    admin?: AdminComplianceAssigneeProfile | null;
+    assignedAdmin?: AdminComplianceAssigneeProfile | null;
 }
 
 export interface AdminComplianceApiRecord {
@@ -39,7 +44,7 @@ export interface AdminComplianceReviewsPage {
 export interface AdminComplianceReviewsResponseBody {
     status?: string;
     message?: string;
-    data?: AdminComplianceReviewsPage;
+    data?: Partial<AdminComplianceReviewsPage>;
     users?: AdminComplianceApiRecord[];
     hasNext?: boolean;
     nextCursor?: AdminComplianceApiCursor | null;

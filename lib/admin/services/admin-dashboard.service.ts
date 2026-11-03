@@ -119,6 +119,8 @@ export async function fetchAdminUsersPage(
 ): Promise<AdminUsersPage> {
     const response = await apiClient.get<unknown>(ADMIN_USERS_PATH, {
         ...filters,
+        reported_users:
+            filters.reported_users != null ? String(filters.reported_users) : undefined,
         limit: filters.limit != null ? String(filters.limit) : undefined,
     });
 

@@ -29,6 +29,8 @@ export interface AdminComplianceDetailApiDocument {
 export interface AdminComplianceKycRecord {
     id?: string;
     userId?: string;
+    firstName?: string;
+    lastName?: string;
     createdAt?: string;
     updatedAt?: string;
     status?: string;

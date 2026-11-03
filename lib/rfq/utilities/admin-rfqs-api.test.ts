@@ -12,7 +12,19 @@ describe("parseAdminRfqsAdminApiResponse", () => {
             status: "success",
             data: {
                 totalCount: 12,
-                results: [{ id: "rfq-1" }],
+                results: [
+                    {
+                        id: "rfq-1",
+                        status: "pending",
+                        createdAt: "2026-07-01T12:34:56.000Z",
+                        resolvedAt: "",
+                        category: "Electronics",
+                        description: "Test RFQ",
+                        minPrice: 100,
+                        maxPrice: 200,
+                        user: { firstName: "John", lastName: "Doe" },
+                    },
+                ],
                 hasNext: true,
                 nextCursor: { cursor_id: "cursor-1", cursor_sort_at: "2026-07-01T12:34:56.000Z" },
             },
