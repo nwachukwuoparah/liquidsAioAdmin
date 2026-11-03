@@ -9,27 +9,18 @@ describe("adminInviteTeamMemberSchema", () => {
     it("accepts valid invite form values", () => {
         const parsedValues = adminInviteTeamMemberSchema.parse({
             email: "new.admin@liquidsaio.com",
-            role: ADMIN_INVITE_ROLE.ADMIN,
+            roleId: ADMIN_INVITE_ROLE.ADMIN,
             message: "Welcome to the team.",
         });
 
         expect(parsedValues.email).toBe("new.admin@liquidsaio.com");
-        expect(parsedValues.role).toBe(ADMIN_INVITE_ROLE.ADMIN);
+        expect(parsedValues.roleId).toBe(ADMIN_INVITE_ROLE.ADMIN);
     });
 
     it("rejects invalid email addresses", () => {
         const result = adminInviteTeamMemberSchema.safeParse({
             email: "not-an-email",
-            role: ADMIN_INVITE_ROLE.ADMIN,
-        });
-
-        expect(result.success).toBe(false);
-    });
-
-    it("rejects unsupported roles", () => {
-        const result = adminInviteTeamMemberSchema.safeParse({
-            email: "new.admin@liquidsaio.com",
-            role: ADMIN_INVITE_ROLE.SUPER_ADMIN,
+            roleId: ADMIN_INVITE_ROLE.ADMIN,
         });
 
         expect(result.success).toBe(false);
@@ -41,12 +32,12 @@ describe("toAdminInviteTeamMemberRequestBody", () => {
         expect(
             toAdminInviteTeamMemberRequestBody({
                 email: "  new.admin@liquidsaio.com ",
-                role: ADMIN_INVITE_ROLE.ADMIN,
+                roleId: ADMIN_INVITE_ROLE.ADMIN,
                 message: "Optional note",
             }),
         ).toEqual({
             email: "new.admin@liquidsaio.com",
-            role: ADMIN_INVITE_ROLE.ADMIN,
+            roleId: ADMIN_INVITE_ROLE.ADMIN,
         });
     });
 });

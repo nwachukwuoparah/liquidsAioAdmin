@@ -162,7 +162,7 @@ describe("resolveSessionBearerToken", () => {
 
         const requestConfig = await apiClient.resolveSessionBearerToken({
             apiPath: "/v1/admin/example",
-            headers: {},
+            headers: {} as never,
         });
 
         expect((requestConfig.headers as Record<string, string>)[AUTHORIZATION_HEADER]).toBe(
@@ -177,7 +177,7 @@ describe("resolveSessionBearerToken", () => {
 
         const requestConfig = await apiClient.resolveSessionBearerToken({
             apiPath: "/v1/admin/example",
-            headers: {},
+            headers: {} as never,
         });
 
         expect(mockRefreshAccessTokenQueued).toHaveBeenCalledTimes(1);
@@ -191,7 +191,7 @@ describe("resolveSessionBearerToken", () => {
 
         const requestConfig = await apiClient.resolveSessionBearerToken({
             apiPath: "/v1/auth/admin/login",
-            headers: {},
+            headers: {} as never,
         });
 
         expect(requestConfig.headers).toEqual({});
@@ -204,7 +204,7 @@ describe("resolveSessionBearerToken", () => {
         const requestConfig = await apiClient.resolveSessionBearerToken({
             apiPath: "/v1/admin/example",
             skipSessionBearer: true,
-            headers: {},
+            headers: {} as never,
         });
 
         expect(requestConfig.headers).toEqual({});
@@ -217,7 +217,7 @@ describe("resolveSessionBearerToken", () => {
             apiPath: "/v1/admin/example",
             headers: {
                 [AUTHORIZATION_HEADER]: "Bearer session-token",
-            },
+            } as never,
         });
 
         expect((requestConfig.headers as Record<string, string>)[AUTHORIZATION_HEADER]).toBe(

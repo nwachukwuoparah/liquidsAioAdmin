@@ -1,6 +1,6 @@
 import { getProfileAvatarInitials, PROFILE_AVATAR_CLASS } from "@/lib/profile-avatar";
 
-type ProfileAvatarSize = "sm" | "lg" | "xl" | "xxl" | "xxxl" | "xxxxl" | "xxxxxl" | "xxxxxxl" | "xxxxxxxl" | "xxxxxxxxl";
+type ProfileAvatarSize = "sm" | "md" | "lg" | "xl" | "xxl" | "xxxl" | "xxxxl" | "xxxxxl" | "xxxxxxl" | "xxxxxxxl" | "xxxxxxxxl";
 
 interface ProfileAvatarProps {
     name: string;
@@ -14,6 +14,7 @@ interface ProfileAvatarProps {
 
 const PROFILE_AVATAR_SIZE_CLASS: Record<ProfileAvatarSize, string> = {
     sm: "h-9 w-9 text-xs lg:h-8 lg:w-8",
+    md: "h-10 w-10 text-xs",
     lg: "h-12 w-12 text-sm",
     xl: "h-15 w-15 text-base",
     xxl: "h-18 w-18 text-lg",

@@ -44,12 +44,12 @@ describe("adminInviteTeamMember", () => {
 
         const inviteResult = await adminInviteTeamMember({
             email: "new.admin@liquidsaio.com",
-            role: ADMIN_INVITE_ROLE.ADMIN,
+            roleId: ADMIN_INVITE_ROLE.ADMIN,
         });
 
         expect(mockApiClientPost).toHaveBeenCalledWith(ADMIN_INVITE_PATH, {
             email: "new.admin@liquidsaio.com",
-            role: ADMIN_INVITE_ROLE.ADMIN,
+            roleId: ADMIN_INVITE_ROLE.ADMIN,
         });
         expect(inviteResult.body).toEqual({
             status: "success",

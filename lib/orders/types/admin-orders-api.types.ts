@@ -71,10 +71,14 @@ export interface AdminOrderApiLot {
     title?: string;
     name?: string;
     image?: string;
+    imageUrl?: string;
+    image_url?: string;
     images?: unknown[];
     thumbnailUrl?: string;
     thumbnail_url?: string;
     thumbnail?: string;
+    primaryImage?: string;
+    primary_image?: string;
     price?: number | string;
     pricePerUnit?: number | string;
     price_per_unit?: number | string;
@@ -103,6 +107,7 @@ export interface AdminOrderApiRecord {
     orderNumber?: string;
     order_number?: string;
     title?: string;
+    name?: string;
     lotTitle?: string;
     lot_title?: string;
     lot?: AdminOrderApiLot;
@@ -211,6 +216,9 @@ export interface AdminOrderApiRecord {
     createdAt?: string;
     created_at?: string;
     thumbnailUrl?: string;
+    thumbnail_url?: string;
+    imageUrl?: string;
+    image_url?: string;
     image?: string;
     colorBg?: string;
     alert?: boolean;

@@ -5,7 +5,7 @@ import { SetupTwoFactorFlow } from "@/components/auth/setup-two-factor-flow";
 describe("SetupTwoFactorFlow", () => {
     it("shows QR setup and reveals OTP confirmation on the same screen", async () => {
         const onContinue = vi.fn();
-        const onConfirmSetup = vi.fn((event) => event.preventDefault());
+        const onConfirmSetup = vi.fn();
         const onOtpChange = vi.fn();
 
         render(
@@ -41,7 +41,7 @@ describe("SetupTwoFactorFlow", () => {
                 isSubmitting={false}
                 otpErrors={{}}
                 onContinue={vi.fn()}
-                onConfirmSetup={vi.fn((event) => event.preventDefault())}
+                onConfirmSetup={vi.fn()}
                 onOtpChange={vi.fn()}
             />,
         );

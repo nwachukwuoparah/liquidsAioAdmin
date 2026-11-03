@@ -37,7 +37,7 @@ export interface AdminRfqsAdminApiPage {
 export interface AdminRfqsAdminApiResponseBody {
     status?: string;
     message?: string;
-    data?: AdminRfqsAdminApiPage;
+    data?: Partial<AdminRfqsAdminApiPage>;
     totalCount?: number;
     results?: AdminRfqApiRecord[]; 
     rfqs?: AdminRfqApiRecord[];
