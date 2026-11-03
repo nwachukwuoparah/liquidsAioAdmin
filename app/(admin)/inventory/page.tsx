@@ -6,9 +6,7 @@ import {
     CheckCircleIcon,
     CurrencyDollarIcon,
     FlagIcon,
-    MapPinIcon,
     RadioButtonIcon,
-    ShieldIcon,
     SlidersHorizontalIcon,
     StorefrontIcon,
     TagIcon,
@@ -24,18 +22,22 @@ import SearchInput from "@/components/search-input";
 import { TablePagination } from "@/components/table-pagination";
 import { AdminAsyncContent, DataTableSkeleton, ListRowsSkeleton, StatCardsSkeleton } from "@/components/skeletons";
 import { useModal } from "@/context/modal-provider";
+import PeriodDropdown, { type PeriodOption } from "@/components/period-dropdown";
 import { formatCount } from "@/lib/format-count";
 import Typography from '@/components/typography';
 import { useAdminInventoryLots, useAdminInventoryOverview, useAdminInventoryTabCounts } from "@/lib/admin/hooks";
 import {
     formatInventoryOverviewDelta,
+    getInventoryOverviewRange,
     INVENTORY_OVERVIEW_STAT_CARDS,
 } from "@/lib/admin/constants/admin-inventory-overview.constant";
 import { getAdminIconComponent } from "@/lib/admin/utilities/admin-icon-map";
 import {
     ADMIN_INVENTORY_DEFAULT_PAGE_LIMIT,
+    INVENTORY_CATEGORY_CODE_TO_LABEL,
     INVENTORY_CATEGORY_LABEL_TO_CODE,
     INVENTORY_CONDITION_LABEL_TO_VALUE,
+    INVENTORY_CONDITION_VALUE_TO_LABEL,
     INVENTORY_REVIEW_STATUS_LABELS,
 } from "@/lib/inventory/constants/admin-inventory-api.constant";
 import {
@@ -53,7 +55,7 @@ function resolveInventoryCategoryLabel(code?: string): string | undefined {
         return undefined;
     }
 
-    return Object.entries(INVENTORY_CATEGORY_LABEL_TO_CODE).find(([, value]) => value === code)?.[0];
+    return INVENTORY_CATEGORY_CODE_TO_LABEL[code] ?? Object.entries(INVENTORY_CATEGORY_LABEL_TO_CODE).find(([, value]) => value === code)?.[0];
 }
 
 function resolveInventoryConditionLabel(value?: string): string | undefined {
@@ -61,7 +63,7 @@ function resolveInventoryConditionLabel(value?: string): string | undefined {
         return undefined;
     }
 
-    return Object.entries(INVENTORY_CONDITION_LABEL_TO_VALUE).find(([, apiValue]) => apiValue === value)?.[0];
+    return INVENTORY_CONDITION_VALUE_TO_LABEL[value] ?? Object.entries(INVENTORY_CONDITION_LABEL_TO_VALUE).find(([, apiValue]) => apiValue === value)?.[0];
 }
 
 function renderLotThumbnail(lot: { img: string; alert?: boolean }, sizeClassName: string) {
@@ -90,6 +92,7 @@ export default function AllLotsContentSection() {
     const [actionMenuId, setActionMenuId] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(ADMIN_INVENTORY_DEFAULT_PAGE_LIMIT);
+    const [overviewPeriod, setOverviewPeriod] = useState<PeriodOption>("This week");
 
     const lotsQueryParams = useMemo(
         () =>
@@ -102,11 +105,32 @@ export default function AllLotsContentSection() {
         [activeTab, filterParams, page, pageSize, searchQuery],
     );
 
+    const overviewRange = useMemo(
+        () => getInventoryOverviewRange(overviewPeriod),
+        [overviewPeriod],
+    );
+
     const inventoryLotsQuery = useAdminInventoryLots(lotsQueryParams);
-    const inventoryOverviewQuery = useAdminInventoryOverview();
+    const inventoryOverviewQuery = useAdminInventoryOverview(overviewRange);
     const inventoryTabCountsQuery = useAdminInventoryTabCounts();
     const lotsData = inventoryLotsQuery.data?.results ?? [];
     const totalLotsCount = inventoryLotsQuery.data?.totalCount ?? lotsData.length;
+
+    const displayLots = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return lotsData;
+        }
+        const term = searchQuery.trim().toLowerCase();
+        return lotsData.filter((lot) =>
+            lot.title.toLowerCase().includes(term) ||
+            lot.seller.toLowerCase().includes(term) ||
+            lot.cat.toLowerCase().includes(term) ||
+            lot.cond.toLowerCase().includes(term) ||
+            lot.status.toLowerCase().includes(term) ||
+            lot.id.toLowerCase().includes(term)
+        );
+    }, [lotsData, searchQuery]);
+
     const inventoryOverview = inventoryOverviewQuery.data;
     const tabCounts = inventoryTabCountsQuery.tabCounts;
     const allLotsCount =
@@ -158,13 +182,11 @@ export default function AllLotsContentSection() {
     );
 
     const filterBlueprints: FilterConfig[] = [
-        { id: 'status', label: 'Lot Status', defaultValue: 'All statuses', options: ['All statuses', 'Active', 'Pending', 'Declined', 'Suspended', 'Out-of-Stock'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'sellerStatus', label: 'Seller status', defaultValue: 'All', options: ['All', 'Verified', 'Unverified'], icon: <ShieldIcon className="h-4 w-[15px] shrink-0 text-[#343330]" /> },
-        { id: 'category', label: 'Category', defaultValue: 'All categories', options: ['All categories', 'Electronics', 'Apparel & Footwear', 'Home & Kitchen', 'Health & Beauty'], icon: <TagIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'condition', label: 'Condition', defaultValue: 'All conditions', options: ['All conditions', 'New', 'Mixed', 'Overstock'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'location', label: 'Location', defaultValue: 'All locations', isSearchable: true, searchPlaceholder: 'Search location...', options: ['All locations', 'California, USA', 'Texas, USA'], icon: <MapPinIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'datePosted', label: 'Date posted', defaultValue: 'All time', options: ['All time', 'Today', 'This week'], icon: <CalendarDotsIcon className={FILTER_ICON_CLASS} /> },
-        { id: 'priceRange', label: 'Price range', defaultValue: 'All prices', options: ['All prices', '$0 - $500', '$500 - $2,000', '$2,000 - $10,000', 'Over $10,000'], icon: <CurrencyDollarIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'status', label: 'Lot Status', defaultValue: 'All statuses', options: ['All statuses', 'Active', 'Pending', 'In review', 'Declined', 'Suspended'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'category', label: 'Category', defaultValue: 'All categories', options: ['All categories', 'Electronics', 'Apparel & Footwear', 'Home & Kitchen', 'Health & Beauty', 'General Merchandise', 'Toys & Baby'], icon: <TagIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'condition', label: 'Condition', defaultValue: 'All conditions', options: ['All conditions', 'New', 'Refurbished', 'Mixed', 'Overstock'], icon: <RadioButtonIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'datePosted', label: 'Date posted', defaultValue: 'All time', customRangeKind: 'date', options: ['All time', 'Today', 'This week', 'This month', 'Custom date'], icon: <CalendarDotsIcon className={FILTER_ICON_CLASS} /> },
+        { id: 'priceRange', label: 'Price range', defaultValue: 'All prices', customRangeKind: 'price', options: ['All prices', '$0 - $500', '$500 - $2,000', '$2,000 - $10,000', 'Over $10,000', 'Custom range'], icon: <CurrencyDollarIcon className={FILTER_ICON_CLASS} /> },
     ];
 
     const selectedInventoryFilters = useMemo<Record<string, string | undefined>>(
@@ -172,10 +194,8 @@ export default function AllLotsContentSection() {
             status: filterParams.review_status
                 ? INVENTORY_REVIEW_STATUS_LABELS[filterParams.review_status]
                 : undefined,
-            sellerStatus: filterParams.sellerStatus,
             category: resolveInventoryCategoryLabel(filterParams.category),
             condition: resolveInventoryConditionLabel(filterParams.condition),
-            location: filterParams.location,
             datePosted: filterParams.datePosted,
             priceRange: filterParams.priceRange,
         }),
@@ -227,9 +247,12 @@ export default function AllLotsContentSection() {
 
             {/* OVERVIEW STATS ROW */}
             <div className="space-y-3 px-4 md:px-0">
-                <Typography type="text14" fontWeight={700} className="text-[#0B0E05] block">
-                    Overview
-                </Typography>
+                <div className="flex items-center justify-between">
+                    <Typography type="text14" fontWeight={700} className="text-[#0B0E05] block">
+                        Overview
+                    </Typography>
+                    <PeriodDropdown value={overviewPeriod} onChange={setOverviewPeriod} />
+                </div>
                 {inventoryOverviewQuery.isLoading ? (
                     <StatCardsSkeleton count={4} columnsClassName="grid grid-cols-2 lg:grid-cols-4 gap-3.5" />
                 ) : (
@@ -268,7 +291,7 @@ export default function AllLotsContentSection() {
                                     ) : null}
                                     <Typography type="text12" fontWeight={600} className="text-[#0B0E05A3]">
                                         <span className={`font-semibold ${card.deltaClassName}`}>{card.deltaText}</span>{" "}
-                                        this month
+                                        {overviewPeriod.toLowerCase()}
                                     </Typography>
                                 </div>
                             </div>
@@ -339,11 +362,11 @@ export default function AllLotsContentSection() {
                 <div className="flex flex-col gap-3 px-4 pb-6 pt-4">
                     <AdminAsyncContent
                         isLoading={inventoryLotsQuery.isLoading}
-                        isEmpty={lotsData.length === 0}
+                        isEmpty={displayLots.length === 0}
                         loadingFallback={<ListRowsSkeleton rows={5} />}
                         emptyFallback={<EmptyState title="No lots found" />}
                     >
-                    {lotsData.map((lot) => (
+                    {displayLots.map((lot) => (
                         <div
                             key={lot.id}
                             data-testid="mobile-lot-card"
@@ -357,8 +380,8 @@ export default function AllLotsContentSection() {
                                         type="text14"
                                         fontWeight={700}
                                         truncate
-                                        maxLength={42}
-                                        lines={2}
+                                        maxLength={23}
+                                        lines={1}
                                         className="min-w-0 flex-1 !text-[#0B0E05] leading-snug"
                                     >
                                         {lot.title}
@@ -464,44 +487,43 @@ export default function AllLotsContentSection() {
 
                 {/* DESKTOP SPREADSHEET LAYOUT TABLE */}
                 <div className="w-full">
-                    <div className="w-full overflow-x-auto">
-                    <table className="w-full text-left border-collapse table-auto min-w-[1000px]">
+                    <table className="w-full table-fixed border-collapse text-left">
                         <thead>
                             <tr className="border-b border-[#0B0E0514] bg-[#0B0E050A] text-[#0B0E05A3]">
-                                <th className="w-[56px] py-3.5 pl-6 pr-2 text-center">
+                                <th className="w-[48px] py-3.5 pl-6 pr-2 text-center">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">S/N</Typography>
                                 </th>
-                                <th className="py-3.5 pr-4 min-w-[280px] max-w-[340px]">
+                                <th className="w-[18%] py-3.5 pr-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Lot title</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[140px] max-w-[180px]">
+                                <th className="w-[13%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Seller</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[150px] max-w-[200px]">
+                                <th className="w-[13%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Category</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 text-center min-w-[80px]">
+                                <th className="w-[8%] py-3.5 px-3 text-center">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Quantity</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[90px]">
+                                <th className="w-[9%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Price</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[110px]">
+                                <th className="w-[10%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Condition</Typography>
                                 </th>
-                                <th className="py-3.5 px-4 min-w-[120px]">
+                                <th className="w-[10%] py-3.5 px-3">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Date posted</Typography>
                                 </th>
-                                <th className="min-w-[140px] py-3.5 px-4">
+                                <th className="w-[8%] py-3.5 pl-3 pr-2">
                                     <Typography type="text12" fontWeight={700} className="uppercase tracking-wider text-[#0B0E05A3]">Status</Typography>
                                 </th>
-                                <th className="py-3.5 pr-6 pl-2 w-[50px]"></th>
+                                <th className="w-[44px] py-3.5 pl-2 pr-4"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#0B0E0514]  bg-[#FFFFFF]">
                             <AdminAsyncContent
                                 isLoading={inventoryLotsQuery.isLoading}
-                                isEmpty={lotsData.length === 0}
+                                isEmpty={displayLots.length === 0}
                                 loadingFallback={
                                     <tr>
                                         <td colSpan={10}>
@@ -517,32 +539,32 @@ export default function AllLotsContentSection() {
                                     </tr>
                                 }
                             >
-                            {lotsData.map((lot, index) => (
+                            {displayLots.map((lot, index) => (
                                 <tr key={lot.id} className="transition-colors hover:bg-[#0B0E050A]">
                                     <td className="py-3.5 pl-6 pr-2 text-center">
                                         <Typography type="text12" fontWeight={700} className="text-[#0B0E05A3]">
                                             {serialNumberOffset + index + 1}
                                         </Typography>
                                     </td>
-                                    <td className="py-3.5 pr-4 min-w-0 max-w-[340px]">
-                                        <div className="flex items-center w-full min-w-0">
-                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 relative mr-3 overflow-hidden`}>
+                                    <td className="min-w-0 py-3.5 pr-3">
+                                        <div className="flex w-full min-w-0 items-center">
+                                            <div className={`relative mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg`}>
                                                 {isLotImageUrl(lot.img) ? (
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img src={lot.img} alt="" className="h-full w-full object-cover" />
                                                 ) : (
                                                     <div className={`absolute inset-0 ${lot.img}`} />
                                                 )}
-                                                {lot.alert && <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-red-500 border border-white" />}
+                                                {lot.alert && <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-red-500" />}
                                             </div>
 
-                                            <div className="flex-1 min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <Typography
                                                     type="text14"
                                                     fontWeight={700}
-                                                    className=" block w-full"
+                                                    className="block w-full"
                                                     truncate={true}
-                                                    maxLength={40}
+                                                    maxLength={19}
                                                     lines={1}
                                                 >
                                                     {lot.title}
@@ -550,36 +572,38 @@ export default function AllLotsContentSection() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="py-3.5 px-4 min-w-0 max-w-[180px]">
+                                    <td className="min-w-0 py-3.5 px-3">
                                         <div className="block w-full min-w-0">
-                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={22} className=" block w-full">
+                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={16} className="block w-full">
                                                 {lot.seller}
                                             </Typography>
                                         </div>
                                     </td>
-                                    <td className="py-3.5 px-4 min-w-0 max-w-[200px]">
+                                    <td className="min-w-0 py-3.5 px-3">
                                         <div className="block w-full min-w-0">
-                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={24} className=" block w-full">
+                                            <Typography type="text14" fontWeight={500} truncate={true} maxLength={16} className="block w-full">
                                                 {lot.cat}
                                             </Typography>
                                         </div>
                                     </td>
-                                    <td className="py-3.5 px-4 text-center">
+                                    <td className="py-3.5 px-3 text-center">
                                         <Typography type="text14" fontWeight={600} className="text-[#0B0E05CC]">{lot.qty}</Typography>
                                     </td>
-                                    <td className="py-3.5 px-4">
-                                        <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">{lot.price}</Typography>
+                                    <td className="min-w-0 py-3.5 px-3">
+                                        <Typography type="text14" fontWeight={700} className="truncate text-[#0B0E05]">{lot.price}</Typography>
                                     </td>
-                                    <td className="py-3.5 px-4">
-                                        <Typography type="text14" fontWeight={500} className="">{lot.cond}</Typography>
+                                    <td className="min-w-0 py-3.5 px-3">
+                                        <Typography type="text14" fontWeight={500} truncate maxLength={12} className="block w-full">
+                                            {lot.cond}
+                                        </Typography>
                                     </td>
-                                    <td className="py-3.5 px-4">
-                                        <Typography type="text14" fontWeight={400} className="text-[#0B0E05A3]">{lot.date}</Typography>
+                                    <td className="min-w-0 py-3.5 px-3">
+                                        <Typography type="text14" fontWeight={400} className="truncate text-[#0B0E05A3]">{lot.date}</Typography>
                                     </td>
-                                    <td className="whitespace-nowrap py-3.5 px-4">
+                                    <td className="min-w-0 py-3.5 pl-3 pr-2">
                                         <LotStatusBadge status={lot.status} />
                                     </td>
-                                    <td className="relative py-3.5 pl-2 pr-6">
+                                    <td className="relative py-3.5 pl-2 pr-4">
                                         <InventoryActionMenu
                                             lotId={lot.id}
                                             lotSlug={lot.slug}
@@ -596,13 +620,12 @@ export default function AllLotsContentSection() {
                             </AdminAsyncContent>
                         </tbody>
                     </table>
-                    </div>
 
                     {/* DESKTOP FOOTER CONTROL AREA */}
                     <TablePagination
                         page={page}
                         pageSize={pageSize}
-                        totalCount={totalLotsCount}
+                        totalCount={searchQuery.trim() ? displayLots.length : totalLotsCount}
                         onPageChange={handlePageChange}
                         onPageSizeChange={handlePageSizeChange}
                         disabled={inventoryLotsQuery.isFetching}

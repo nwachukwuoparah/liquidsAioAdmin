@@ -6,7 +6,7 @@ import { ChevronDownIcon } from "@/components/vector";
 import { useFloatingMenu } from "@/lib/hooks/use-floating-menu";
 import { useState } from "react";
 
-const PERIOD_OPTIONS = ["This month", "This week", "Today", "This year"] as const;
+const PERIOD_OPTIONS = ["All time", "Today", "This week", "This month", "This year"] as const;
 
 export type PeriodOption = (typeof PERIOD_OPTIONS)[number];
 

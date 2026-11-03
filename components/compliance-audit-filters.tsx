@@ -55,9 +55,9 @@ export const COMPLIANCE_AUDIT_FILTER_BLUEPRINTS: ComplianceAuditFilterConfig[] =
     },
     {
         id: "dateRange",
-        label: "Custom range",
+        label: "Date range",
         defaultValue: "All time",
-        options: ["All time", "Today", "This week", "This month", "Last 30 days"],
+        options: ["All time", "Today", "This week", "This month", "Last 30 days", "Custom range"],
         icon: <CalendarDotsIcon className="h-5 w-5 text-[#343330]" />,
     },
 ];

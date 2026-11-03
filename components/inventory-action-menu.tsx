@@ -116,7 +116,7 @@ export default function InventoryActionMenu({
                 >
                     <EyeIcon className="h-5 w-5 text-[#0B0E05]" />
                     <Typography type="text14" fontWeight={500} className="text-[#0B0E05]">
-                        View lot details
+                        View lot
                     </Typography>
                 </button>
 

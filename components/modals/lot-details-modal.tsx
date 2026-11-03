@@ -374,7 +374,7 @@ export default function LotDetailsModal({ lotId }: LotDetailsModalProps) {
                                 className="hidden items-center gap-1.5 rounded-[12px] border border-[#0B0E0514] bg-[#FFFFFF] px-3 py-2 transition-colors hover:bg-[#0B0E050A] sm:inline-flex"
                             >
                                 <Typography type="text12" fontWeight={600} className="text-[#0B0E05]">
-                                    View listing
+                                    View lot
                                 </Typography>
                                 <ArrowSquareOutIcon className="h-4 w-4 text-[#0B0E05]" />
                             </button>
@@ -440,7 +440,7 @@ export default function LotDetailsModal({ lotId }: LotDetailsModalProps) {
                                             className="inline-flex w-fit items-center gap-1.5 rounded-[12px] border border-[#0B0E0514] px-3 py-2 sm:hidden"
                                         >
                                             <Typography type="text12" fontWeight={600} className="text-[#0B0E05]">
-                                                View listing
+                                                View lot
                                             </Typography>
                                             <ArrowSquareOutIcon className="h-4 w-4 text-[#0B0E05]" />
                                         </button>

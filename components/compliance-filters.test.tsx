@@ -65,4 +65,33 @@ describe("ComplianceFilters", () => {
 
         expect(screen.getByTestId("compliance-filter-compliance_review_status")).toHaveTextContent("In review");
     });
+
+    it("opens the custom date panel and applies custom date range", () => {
+        const onFilterChange = vi.fn();
+
+        render(
+            <ComplianceFilters
+                searchQuery=""
+                onSearchChange={vi.fn()}
+                filters={COMPLIANCE_FILTER_BLUEPRINTS}
+                selectedValues={defaultSelectedValues}
+                onFilterChange={onFilterChange}
+            />
+        );
+
+        fireEvent.click(screen.getByTestId("compliance-filter-dateRange"));
+        expect(screen.getByTestId("compliance-filter-menu-dateRange")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId("compliance-filter-option-dateRange-custom-date"));
+
+        const startInput = screen.getByTestId("compliance-filter-option-dateRange-custom-start");
+        const endInput = screen.getByTestId("compliance-filter-option-dateRange-custom-end");
+        const applyBtn = screen.getByTestId("compliance-filter-option-dateRange-custom-apply");
+
+        fireEvent.change(startInput, { target: { value: "2026-06-01" } });
+        fireEvent.change(endInput, { target: { value: "2026-06-18" } });
+        fireEvent.click(applyBtn);
+
+        expect(onFilterChange).toHaveBeenCalledWith("dateRange", "custom:2026-06-01:2026-06-18");
+    });
 });

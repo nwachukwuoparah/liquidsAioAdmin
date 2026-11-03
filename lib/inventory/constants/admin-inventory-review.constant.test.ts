@@ -8,8 +8,14 @@ import {
 } from "./admin-inventory-review.constant";
 
 describe("admin inventory review path helpers", () => {
-    it("builds the lot detail path", () => {
+    it("builds the lot detail path from a slug", () => {
         expect(getAdminLotDetailPath("iphone-taahoilo5ufz")).toBe("/lots/iphone-taahoilo5ufz");
+    });
+
+    it("builds the lot detail path from a UUID via by-id", () => {
+        expect(getAdminLotDetailPath("019d97d2-21d8-7336-95ea-88bee39b084d")).toBe(
+            "/lots/by-id/019d97d2-21d8-7336-95ea-88bee39b084d",
+        );
     });
 
     it("builds the approve path", () => {

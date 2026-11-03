@@ -3,6 +3,7 @@ import {
     ADMIN_COMPLIANCE_AUDIT_LOGS_PATH,
     ADMIN_COMPLIANCE_REVIEWS_PATH,
     ADMIN_COMPLIANCE_REVIEW_PATH,
+    ADMIN_COMPLIANCE_VIEWING_LINK_PATH,
     getAdminComplianceAssignPath,
     getAdminComplianceClaimPath,
     getAdminComplianceDetailPath,
@@ -12,7 +13,7 @@ import { ADMIN_COMPLIANCE_DEFAULT_PAGE_LIMIT } from "@/lib/compliance/constants/
 import { ADMIN_COMPLIANCE_AUDIT_DEFAULT_PAGE_LIMIT } from "@/lib/compliance/constants/admin-compliance-audit.constant";
 import type {
     AdminComplianceAssignRequestBody,
-    AdminComplianceDetailRecord,
+    AdminComplianceDetailData,
     AdminComplianceDetailResponseBody,
 } from "@/lib/compliance/types/admin-compliance-detail.types";
 import type {
@@ -33,6 +34,7 @@ import type { AdminComplianceReviewRecord } from "@/lib/admin/types/admin-api.ty
 import type { AdminComplianceActionRequestBody } from "@/lib/admin/types/admin-api.types";
 import type { ComplianceReviewMutationVariables } from "@/lib/compliance/types/admin-compliance-review.types";
 import { getAdminApiResponseMessage } from "@/lib/admin/utilities/parse-admin-api-response-data";
+import { ApiError } from "@/lib/api/api-error";
 import { apiClient } from "@/lib/api/api-client";
 
 function buildAdminComplianceQueryParams({
@@ -57,6 +59,7 @@ export interface AdminComplianceReviewsMappedPage {
 
 export interface AdminComplianceAuditLogsMappedPage {
     results: AdminComplianceAuditLogRecord[];
+    auditLogs: AdminComplianceAuditLogApiRecord[];
     hasNext: boolean;
     nextCursor?: { cursor_id?: string; cursor_sort_at?: string } | null;
 }
@@ -106,13 +109,14 @@ export async function fetchAdminComplianceAuditLogsPage(
 
     return {
         results: page.auditLogs.map((record, index) => mapAdminComplianceAuditLogRecord(record, index)),
+        auditLogs: page.auditLogs,
         hasNext: page.hasNext,
         nextCursor: page.nextCursor,
     };
 }
 
-/** Fetches a single compliance user detail with uploaded documents. */
-export async function fetchAdminComplianceDetail(userId: string): Promise<AdminComplianceDetailRecord> {
+/** Fetches a single compliance user detail with exact server payload structure. */
+export async function fetchAdminComplianceDetail(userId: string): Promise<AdminComplianceDetailData> {
     const { body } = await apiClient.get<AdminComplianceDetailResponseBody>(
         getAdminComplianceDetailPath(userId),
     );
@@ -121,21 +125,59 @@ export async function fetchAdminComplianceDetail(userId: string): Promise<AdminC
 }
 
 /** Accepts a compliance document or full review. */
-export async function postAdminComplianceReviewAccept({ payload }: ComplianceReviewMutationVariables) {
-    const response = await apiClient.post<unknown>(ADMIN_COMPLIANCE_REVIEW_PATH, payload);
+export async function postAdminComplianceReviewAccept({ userId, payload }: ComplianceReviewMutationVariables) {
+    try {
+        const response = await apiClient.post<unknown>(ADMIN_COMPLIANCE_REVIEW_PATH, payload);
 
-    return {
-        message: getAdminApiResponseMessage(response.body, "Compliance review accepted."),
-    };
+        return {
+            message: getAdminApiResponseMessage(response.body, "Compliance review accepted."),
+        };
+    } catch (error) {
+        if (
+            userId &&
+            error instanceof ApiError &&
+            (error.message.toLowerCase().includes("claim") || error.statusCode === 400 || error.statusCode === 403)
+        ) {
+            try {
+                await postAdminComplianceClaim(userId);
+                const retryResponse = await apiClient.post<unknown>(ADMIN_COMPLIANCE_REVIEW_PATH, payload);
+                return {
+                    message: getAdminApiResponseMessage(retryResponse.body, "Compliance review accepted."),
+                };
+            } catch {
+                throw error;
+            }
+        }
+        throw error;
+    }
 }
 
 /** Rejects a compliance document or full review. */
-export async function postAdminComplianceReviewReject({ payload }: ComplianceReviewMutationVariables) {
-    const response = await apiClient.post<unknown>(ADMIN_COMPLIANCE_REVIEW_PATH, payload);
+export async function postAdminComplianceReviewReject({ userId, payload }: ComplianceReviewMutationVariables) {
+    try {
+        const response = await apiClient.post<unknown>(ADMIN_COMPLIANCE_REVIEW_PATH, payload);
 
-    return {
-        message: getAdminApiResponseMessage(response.body, "Compliance review rejected."),
-    };
+        return {
+            message: getAdminApiResponseMessage(response.body, "Compliance review rejected."),
+        };
+    } catch (error) {
+        if (
+            userId &&
+            error instanceof ApiError &&
+            (error.message.toLowerCase().includes("claim") || error.statusCode === 400 || error.statusCode === 403)
+        ) {
+            try {
+                await postAdminComplianceClaim(userId);
+                const retryResponse = await apiClient.post<unknown>(ADMIN_COMPLIANCE_REVIEW_PATH, payload);
+                return {
+                    message: getAdminApiResponseMessage(retryResponse.body, "Compliance review rejected."),
+                };
+            } catch {
+                throw error;
+            }
+        }
+        throw error;
+    }
 }
 
 /** Runs a legacy request-update action on a review. */
@@ -173,4 +215,52 @@ export async function postAdminComplianceUnclaim(userId: string) {
     return {
         message: getAdminApiResponseMessage(response.body, "Compliance case released."),
     };
+}
+
+export interface FetchAdminComplianceViewingLinkParams {
+    file_id: string;
+    format?: string | null;
+    type: "kyc" | "kyb";
+}
+
+export interface AdminComplianceViewingLinkResponseBody {
+    status?: string;
+    message?: string;
+    data?: {
+        viewingLink: string;
+    };
+}
+
+/** Generates a secure, signed time-limited viewing link for a KYC or KYB document. */
+export async function fetchAdminComplianceDocumentViewingLink(
+    params: FetchAdminComplianceViewingLinkParams,
+): Promise<{ viewingLink: string }> {
+    const queryParams: Record<string, string> = {
+        file_id: params.file_id,
+        type: params.type,
+    };
+
+    if (params.format?.trim()) {
+        queryParams.format = params.format.trim().toLowerCase();
+    }
+
+    const { body } = await apiClient.get<AdminComplianceViewingLinkResponseBody>(
+        ADMIN_COMPLIANCE_VIEWING_LINK_PATH,
+        queryParams,
+    );
+
+    if (body.status === "failed") {
+        throw new Error(body.message ?? "Failed to generate document viewing link.");
+    }
+
+    const viewingLink =
+        body.data?.viewingLink ??
+        (body as any)?.viewingLink ??
+        (typeof body.data === "string" ? body.data : undefined);
+
+    if (!viewingLink) {
+        throw new Error(body.message ?? "No viewing link returned by server.");
+    }
+
+    return { viewingLink };
 }

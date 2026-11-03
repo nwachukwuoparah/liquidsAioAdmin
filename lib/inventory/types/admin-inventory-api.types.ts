@@ -1,10 +1,13 @@
 export interface AdminInventoryLotCreatorProfile {
+    id?: string;
+    pid?: string;
     firstName?: string;
     lastName?: string;
     businessName?: string;
 }
 
 export interface AdminInventoryLotImage {
+    id?: string;
     url?: string;
     position?: number;
 }
@@ -27,6 +30,11 @@ export interface AdminInventoryLotApiRecord {
     review_status?: string;
     createdAt?: string;
     created_at?: string;
+    createdBy?: string;
+    created_by?: string;
+    draftId?: string;
+    draft_id?: string;
+    bookmarked?: boolean;
     creator?: AdminInventoryLotCreatorProfile;
     seller?: AdminInventoryLotCreatorProfile;
     images?: AdminInventoryLotImage[];

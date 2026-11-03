@@ -5,7 +5,7 @@ export const AUTH_VERIFY_ROUTE = "/verify";
 export const ADMIN_DASHBOARD_ROUTE = "/overview";
 
 /** Default auth entry — invite sign-up is the first screen in the flow. */
-export const AUTH_ENTRY_ROUTE = "/sign-up";
+export const AUTH_ENTRY_ROUTE = "/login";
 
 /** Auth routes that should redirect fully authenticated users to the dashboard. */
 export const GUEST_ONLY_AUTH_ROUTES = [AUTH_LOGIN_ROUTE] as const;

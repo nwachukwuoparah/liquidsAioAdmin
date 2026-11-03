@@ -18,13 +18,21 @@ export default function InventoryApproveListingModal({
     lotId,
     lotTitle,
 }: InventoryApproveListingModalProps) {
-    const { closeModal } = useModal();
+    const { closeModal, hideAllModals } = useModal();
     const approveListing = useAdminInventoryLotApprove();
 
     const handleApprove = () => {
         approveListing.mutate(
             { lotId, action: "approve" },
-            { onSuccess: () => closeModal() },
+            {
+                onSuccess: () => {
+                    if (typeof hideAllModals === "function") {
+                        hideAllModals();
+                    } else {
+                        closeModal();
+                    }
+                },
+            },
         );
     };
 

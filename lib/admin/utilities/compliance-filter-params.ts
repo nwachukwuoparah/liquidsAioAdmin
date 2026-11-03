@@ -1,5 +1,16 @@
+import {
+    parseCustomDateRange,
+    resolveCustomCalendarDateRange,
+} from "@/lib/filters/custom-date-range";
+
 /** Maps compliance date-range presets to API `start` / `end` ISO timestamps. */
 export function resolveComplianceDateRange(dateRange: string): { start?: string; end?: string } {
+    const customRange = parseCustomDateRange(dateRange);
+
+    if (customRange) {
+        return resolveCustomCalendarDateRange(customRange.startDate, customRange.endDate) ?? {};
+    }
+
     const now = new Date();
     const end = now.toISOString();
 
@@ -19,9 +30,19 @@ export function resolveComplianceDateRange(dateRange: string): { start?: string;
             const start = new Date(now.getFullYear(), now.getMonth(), 1);
             return { start: start.toISOString(), end };
         }
+        case "Last 7 days": {
+            const start = new Date(now);
+            start.setDate(now.getDate() - 7);
+            return { start: start.toISOString(), end };
+        }
         case "Last 30 days": {
             const start = new Date(now);
             start.setDate(now.getDate() - 30);
+            return { start: start.toISOString(), end };
+        }
+        case "Last 90 days": {
+            const start = new Date(now);
+            start.setDate(now.getDate() - 90);
             return { start: start.toISOString(), end };
         }
         default:

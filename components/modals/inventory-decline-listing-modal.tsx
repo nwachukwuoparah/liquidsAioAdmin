@@ -26,7 +26,7 @@ export default function InventoryDeclineListingModal({
     lotId,
     lotTitle,
 }: InventoryDeclineListingModalProps) {
-    const { closeModal } = useModal();
+    const { closeModal, hideAllModals } = useModal();
     const declineListing = useAdminInventoryLotDecline();
 
     const {
@@ -52,7 +52,13 @@ export default function InventoryDeclineListingModal({
                         setError("rejectionReason", { message: error.message });
                     }
                 },
-                onSuccess: () => closeModal(),
+                onSuccess: () => {
+                    if (typeof hideAllModals === "function") {
+                        hideAllModals();
+                    } else {
+                        closeModal();
+                    }
+                },
             },
         );
     });

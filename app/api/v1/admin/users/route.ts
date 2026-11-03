@@ -20,7 +20,7 @@ export async function GET(request: Request) {
             : accountType === "reported"
               ? "reported"
               : "buyers");
-    const search = searchParams.get("search")?.toLowerCase();
+    const search = (searchParams.get("q") ?? searchParams.get("search"))?.toLowerCase();
     const limit = Number(searchParams.get("limit") ?? "0");
 
     let users = SAMPLE_ADMIN_USERS.filter((user) => user.segment === segment);

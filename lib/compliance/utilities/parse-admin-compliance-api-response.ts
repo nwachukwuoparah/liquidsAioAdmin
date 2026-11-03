@@ -1,13 +1,19 @@
 import type {
+    AdminComplianceApiRecord,
     AdminComplianceReviewsPage,
     AdminComplianceReviewsResponseBody,
 } from "@/lib/compliance/types/admin-compliance-api.types";
 
 function normalizePagePayload(payload: AdminComplianceReviewsResponseBody): AdminComplianceReviewsPage {
     const page = payload.data ?? payload;
+    const rawUsers =
+        (page as { users?: AdminComplianceApiRecord[]; results?: AdminComplianceApiRecord[] }).users ??
+        (page as { users?: AdminComplianceApiRecord[]; results?: AdminComplianceApiRecord[] }).results ??
+        [];
 
     return {
-        users: page.users ?? [],
+        users: rawUsers,
+        results: rawUsers,
         hasNext: page.hasNext ?? false,
         nextCursor: page.nextCursor ?? null,
     };

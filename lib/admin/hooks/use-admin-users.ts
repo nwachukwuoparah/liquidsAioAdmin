@@ -53,10 +53,11 @@ export function useAdminUserTabCounts(): {
         queries: USER_TAB_COUNT_KEYS.map(({ accountType }) => ({
             queryKey: ["admin-users", "count", accountType],
             queryFn: async () => {
-                const page = await fetchAdminUsersPage({
-                    accountType,
-                    limit: "1",
-                });
+                const page = await fetchAdminUsersPage(
+                    accountType === "reported"
+                        ? { reported_users: "true", limit: "1" }
+                        : { accountType, limit: "1" },
+                );
                 return page.totalCount;
             },
             ...QueryConfig.LIVE,

@@ -4,6 +4,7 @@ import {
     INVENTORY_PRICE_RANGE_BOUNDS,
     INVENTORY_STATUS_LABEL_TO_REVIEW_STATUS,
 } from "@/lib/inventory/constants/admin-inventory-api.constant";
+import { resolveCustomPriceRangeBounds } from "@/lib/filters/custom-price-range";
 import { resolveInventoryDateRange } from "@/lib/inventory/utilities/inventory-filter-params";
 
 const DEFAULT_FILTER_VALUES = new Set([
@@ -64,7 +65,8 @@ export function applyInventoryFilterChange(
 
         if (!isDefaultValue) {
             updatedParams.priceRange = value;
-            const bounds = INVENTORY_PRICE_RANGE_BOUNDS[value];
+            const customBounds = resolveCustomPriceRangeBounds(value);
+            const bounds = customBounds ?? INVENTORY_PRICE_RANGE_BOUNDS[value];
 
             if (bounds) {
                 updatedParams.min_price = bounds.min_price;
@@ -108,11 +110,6 @@ export function applyInventoryFilterChange(
         return updatedParams;
     }
 
-    if (filterId === "location" || filterId === "sellerStatus") {
-        updatedParams[filterId] = value;
-        return updatedParams;
-    }
-
     updatedParams[filterId] = value.toLowerCase().trim();
     return updatedParams;
 }
@@ -126,8 +123,6 @@ export function countActiveInventoryFilters(filterParams: Record<string, string>
     if (filterParams.condition) count++;
     if (filterParams.start || filterParams.end) count++;
     if (filterParams.min_price || filterParams.max_price) count++;
-    if (filterParams.location) count++;
-    if (filterParams.sellerStatus) count++;
 
     return count;
 }

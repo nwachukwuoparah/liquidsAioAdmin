@@ -22,6 +22,14 @@ describe("getOrderStatusStyles", () => {
             label: "In-transit",
         });
     });
+
+    it("maps combined awaiting shipment / in-transit status", () => {
+        expect(getOrderStatusStyles("Awaiting shipment / In-transit")).toEqual({
+            text: "!text-[#0B0E05]",
+            bg: "bg-[#0B0E050A]",
+            label: "Awaiting shipment / In-transit",
+        });
+    });
 });
 
 describe("getPaymentStatusStyles", () => {
@@ -33,11 +41,16 @@ describe("getPaymentStatusStyles", () => {
         });
     });
 
-    it("maps in escrow to orange", () => {
+    it("maps pending and in escrow to orange pending badge", () => {
+        expect(getPaymentStatusStyles("Pending")).toEqual({
+            text: "!text-[#DC6803]",
+            bg: "bg-[#DC680314]",
+            label: "Pending",
+        });
         expect(getPaymentStatusStyles("In Escrow")).toEqual({
             text: "!text-[#DC6803]",
             bg: "bg-[#DC680314]",
-            label: "In Escrow",
+            label: "Pending",
         });
     });
 

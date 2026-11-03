@@ -22,14 +22,14 @@ import { CATEGORY_GMV_DATA } from "@/lib/overview/chart-data";
 import { getTrendDataForRange } from "@/lib/overview/chart-data";
 
 export const SAMPLE_ADMIN_ORDERS: AdminOrderRecord[] = [
-    { id: "1.", orderId: "#ORD-2024-001", title: "Mixed Electronics Pallet – Headphones, Speakers, Chargers", seller: "Savannah Nguyen", buyer: "John Peters", amount: "$9,000", payStatus: "In Escrow", orderStatus: "Awaiting shipment", date: "05-07-2025", colorBg: "bg-amber-100" },
-    { id: "2.", orderId: "#ORD-2024-002", title: "Branded Apparel – 300 pcs (Nike, Adidas, Under Armour)", seller: "Ronald Richards", buyer: "Wade Warren", amount: "$1,500", payStatus: "Released", orderStatus: "Awaiting shipment", date: "04-07-2025", colorBg: "bg-blue-100" },
-    { id: "3.", orderId: "#ORD-2024-003", title: "Kitchenware Overstock – 2 Pallets (Cookware & Utensils)", seller: "Robert Fox", buyer: "Kathryn Murphy", amount: "$800", payStatus: "Released", orderStatus: "In-transit", date: "03-07-2025", colorBg: "bg-[#0B0E050A]" },
-    { id: "4.", orderId: "#ORD-2024-004", title: "Beauty & Cosmetics Lot – 500 Mixed Units", seller: "Marvin McKinney", buyer: "Ronald Richards", amount: "$1,200", payStatus: "In Escrow", orderStatus: "Awaiting shipment", date: "05-07-2025", colorBg: "bg-red-100" },
-    { id: "5.", orderId: "#ORD-2024-002", title: "Baby Products Pallet – Diapers, Toys, Accessories", seller: "John stockton", buyer: "Cameron Williamson", amount: "$950", payStatus: "Released", orderStatus: "Delivered", date: "05-07-2025", colorBg: "bg-purple-100" },
-    { id: "6.", orderId: "#ORD-2024-002", title: "Automotive Accessories – 150 Mixed Items", seller: "Cameron Williamson", buyer: "Marvin McKinney", amount: "$1,700", payStatus: "In Escrow", orderStatus: "Dispute", date: "05-07-2025", colorBg: "bg-emerald-100" },
-    { id: "7.", orderId: "#ORD-2024-002", title: "Grocery Shelf Pulls – Snacks & Beverages", seller: "Wade Warren", buyer: "Robert Fox", amount: "$600", payStatus: "Refunded", orderStatus: "Cancelled", date: "05-07-2025", colorBg: "bg-amber-100" },
-    { id: "8.", orderId: "#ORD-2024-002", title: "Office Supplies Pallet – Printers, Paper, Toners", seller: "Kathryn Murphy", buyer: "Savannah Nguyen", amount: "$1,100", payStatus: "Refunded", orderStatus: "Order completed", date: "05-07-2025", colorBg: "bg-indigo-100" },
+    { id: "1.", orderId: "#ORD-2024-001", title: "Mixed Electronics Pallet – Headphones, Speakers, Chargers", seller: "Savannah Nguyen", buyer: "John Peters", amount: "$9,000", payStatus: "Pending", orderStatus: "Awaiting shipment", date: "05-07-2025", colorBg: "bg-amber-100", thumbnailUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&auto=format&fit=crop&q=60" },
+    { id: "2.", orderId: "#ORD-2024-002", title: "Branded Apparel – 300 pcs (Nike, Adidas, Under Armour)", seller: "Ronald Richards", buyer: "Wade Warren", amount: "$1,500", payStatus: "Released", orderStatus: "Awaiting shipment", date: "04-07-2025", colorBg: "bg-blue-100", thumbnailUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=80&auto=format&fit=crop&q=60", alert: true },
+    { id: "3.", orderId: "#ORD-2024-003", title: "Kitchenware Overstock – 2 Pallets (Cookware & Utensils)", seller: "Robert Fox", buyer: "Kathryn Murphy", amount: "$800", payStatus: "Released", orderStatus: "In-transit", date: "03-07-2025", colorBg: "bg-[#0B0E050A]", thumbnailUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=80&auto=format&fit=crop&q=60" },
+    { id: "4.", orderId: "#ORD-2024-004", title: "Beauty & Cosmetics Lot – 500 Units", seller: "Marvin McKinney", buyer: "Ronald Richards", amount: "$1,200", payStatus: "Pending", orderStatus: "Awaiting shipment", date: "05-07-2025", colorBg: "bg-red-100", thumbnailUrl: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=80&auto=format&fit=crop&q=60" },
+    { id: "5.", orderId: "#ORD-2024-005", title: "Baby Products Pallet – Diapers, Toys, Accessories", seller: "John stockton", buyer: "Cameron Williamson", amount: "$950", payStatus: "Released", orderStatus: "Delivered", date: "05-07-2025", colorBg: "bg-purple-100", thumbnailUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=80&auto=format&fit=crop&q=60" },
+    { id: "6.", orderId: "#ORD-2024-006", title: "Automotive Accessories – 150 Mixed Items", seller: "Cameron Williamson", buyer: "Marvin McKinney", amount: "$1,700", payStatus: "Pending", orderStatus: "Dispute", date: "05-07-2025", colorBg: "bg-emerald-100", thumbnailUrl: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=80&auto=format&fit=crop&q=60", alert: true },
+    { id: "7.", orderId: "#ORD-2024-007", title: "Grocery Shelf Pulls – Snacks & Beverages", seller: "Wade Warren", buyer: "Robert Fox", amount: "$600", payStatus: "Refunded", orderStatus: "Cancelled", date: "05-07-2025", colorBg: "bg-amber-100", thumbnailUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=80&auto=format&fit=crop&q=60", alert: true },
+    { id: "8.", orderId: "#ORD-2024-008", title: "Office Supplies Pallet – Printers, Paper, Toners", seller: "Kathryn Murphy", buyer: "Savannah Nguyen", amount: "$1,100", payStatus: "Refunded", orderStatus: "Order completed", date: "05-07-2025", colorBg: "bg-indigo-100", thumbnailUrl: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=80&auto=format&fit=crop&q=60", alert: true },
 ];
 
 export const SAMPLE_ADMIN_ORDER_STATS: AdminOrderStatRecord[] = [
@@ -134,18 +134,20 @@ const SAMPLE_OVERVIEW_QUICK_STATS: AdminOverviewStatRecord[] = [
 ];
 
 const SAMPLE_OVERVIEW_ENGAGEMENT_STATS: AdminOverviewStatRecord[] = [
-    { label: "Daily active users", value: "0", changeColor: "text-[#0B0E05A3]", iconKey: "userCheck", iconBg: "bg-[#009D9D]/10", iconColor: "text-[#009D9D]" },
-    { label: "Monthly active users", value: "0", changeColor: "text-[#0B0E05A3]", iconKey: "userCheck", iconBg: "bg-[#DC6803]/10", iconColor: "text-[#DC6803]" },
-    { label: "Avg. session duration", value: "-- mins", changeColor: "text-[#0B0E05A3]", iconKey: "clock", iconBg: "bg-[#00A34114]", iconColor: "text-[#1A1AFF]" },
-    { label: "Churn rate", value: "--%", changeColor: "text-[#0B0E05A3]", iconKey: "userMinus", iconBg: "bg-[#CC2929]/10", iconColor: "text-[#CC2929]" },
-    { label: "Seller retention", value: "--%", changeColor: "text-[#0B0E05A3]", iconKey: "userSwitch", iconBg: "bg-[#BE02BE]/10", iconColor: "text-[#BE02BE]" },
+    { label: "Daily active users", value: "2,837", change: "+12% vs last month", changeColor: "text-[#00A341]", iconKey: "userCheck", iconBg: "bg-[#009D9D]/10", iconColor: "text-[#009D9D]" },
+    { label: "Monthly active users", value: "32,995", change: "+12% vs last month", changeColor: "text-[#00A341]", iconKey: "profileUser", iconBg: "bg-[#DC6803]/10", iconColor: "text-[#DC6803]" },
+    { label: "Avg. session duration", value: "4.3 mins", change: "+27% vs last month", changeColor: "text-[#00A341]", iconKey: "clock", iconBg: "bg-[#1A1AFF]/10", iconColor: "text-[#1A1AFF]" },
+    { label: "Return user rate", value: "91%", change: "+10% vs last month", changeColor: "text-[#00A341]", iconKey: "userSwitch", iconBg: "bg-[#00A341]/10", iconColor: "text-[#00A341]" },
+    { label: "Churn rate", value: "3.2%", change: "-14% vs last month", changeColor: "text-[#CC2929]", iconKey: "userMinus", iconBg: "bg-[#BE02BE]/10", iconColor: "text-[#BE02BE]" },
 ];
 
 const SAMPLE_OVERVIEW_ACTIVITY: AdminOverviewActivityRecord[] = [
-    { id: "1", title: "New seller verified", subtitle: "Savannah Nguyen completed KYC review", time: "2 mins ago", iconKey: "userCheck", iconBg: "bg-[#00A34114]", iconColor: "text-[#00A341]" },
-    { id: "2", title: "Order placed", subtitle: "John Peters placed order #ORD-2024-001", time: "5 mins ago", iconKey: "shoppingCart", iconBg: "bg-[#1A1AFF14]", iconColor: "text-[#1A1AFF]" },
-    { id: "3", title: "Dispute opened", subtitle: "Order #ORD-2024-002 flagged by buyer", time: "12 mins ago", iconKey: "warning", iconBg: "bg-[#CC292914]", iconColor: "text-[#CC2929]" },
-    { id: "4", title: "RFQ submitted", subtitle: "Mary Lynch posted a new buyer request", time: "18 mins ago", iconKey: "bell", iconBg: "bg-[#BE02BE14]", iconColor: "text-[#BE02BE]" },
+    { id: "1", title: "Johnny Banes", subtitle: "uploaded new lot: Electronics Pallets #4521", time: "2 minutes ago", iconKey: "bell", iconBg: "bg-[#B1EC5233]", iconColor: "text-[#518300]" },
+    { id: "2", title: "Allen Smith", subtitle: "submitted KYC application for review", time: "15 minutes ago", iconKey: "bell", iconBg: "bg-[#B1EC5233]", iconColor: "text-[#518300]" },
+    { id: "3", title: "Mayor Rogers", subtitle: "placed a high-value order: $45,000", time: "2 minutes ago", iconKey: "bell", iconBg: "bg-[#B1EC5233]", iconColor: "text-[#518300]" },
+    { id: "4", title: "Liquidation Hub", subtitle: "uploaded new lot: Apparel Returns", time: "1 hours ago", iconKey: "bell", iconBg: "bg-[#B1EC5233]", iconColor: "text-[#518300]" },
+    { id: "5", title: "John Peters", subtitle: "KYC verification approved", time: "2 hours ago", iconKey: "bell", iconBg: "bg-[#B1EC5233]", iconColor: "text-[#518300]" },
+    { id: "6", title: "New RFQ received", subtitle: "from Global Buyers Ltd for Apparel category", time: "3 hours ago", iconKey: "bell", iconBg: "bg-[#B1EC5233]", iconColor: "text-[#518300]" },
 ];
 
 export function getSampleAdminOverviewDashboard(): AdminOverviewDashboardData {

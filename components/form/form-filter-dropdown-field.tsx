@@ -1,6 +1,6 @@
 "use client";
 
-import { CustomDropdown, type CustomDropdownOption } from "@/components/custom-dropdown";
+import { CustomDropdown, type CustomDropdownOption, type CustomRangeKind } from "@/components/custom-dropdown";
 import { FormFieldLabel } from "@/components/form/form-field-label";
 
 interface FormFilterDropdownFieldProps {
@@ -13,6 +13,10 @@ interface FormFilterDropdownFieldProps {
     isRequired?: boolean;
     showRequiredIndicator?: boolean;
     disabled?: boolean;
+    isSearchable?: boolean;
+    isPlacesAutocomplete?: boolean;
+    customRangeKind?: CustomRangeKind;
+    searchPlaceholder?: string;
     id?: string;
     testId?: string;
     menuTestId?: string;
@@ -30,6 +34,10 @@ export function FormFilterDropdownField({
     isRequired = false,
     showRequiredIndicator = true,
     disabled = false,
+    isSearchable = false,
+    isPlacesAutocomplete = false,
+    customRangeKind = "date",
+    searchPlaceholder = "Search...",
     id,
     testId,
     menuTestId,
@@ -55,6 +63,11 @@ export function FormFilterDropdownField({
                 disabled={disabled}
                 variant="form-field"
                 hasError={hasError}
+                isSearchable={isSearchable}
+                isPlacesAutocomplete={isPlacesAutocomplete}
+                customRangeKind={customRangeKind}
+                searchPlaceholder={searchPlaceholder}
+                defaultValue={options[0]?.value}
                 ariaLabel={label}
                 testId={testId}
                 menuTestId={menuTestId}

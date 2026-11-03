@@ -4,9 +4,11 @@ export interface AdminComplianceApiCursor {
 }
 
 export interface AdminComplianceAssigneeProfile {
+    id?: string;
     firstName?: string;
     lastName?: string;
     email?: string;
+    profilePicture?: string | null;
 }
 
 export interface AdminComplianceApiRecord {
@@ -29,6 +31,7 @@ export interface AdminComplianceApiRecord {
 
 export interface AdminComplianceReviewsPage {
     users: AdminComplianceApiRecord[];
+    results?: AdminComplianceApiRecord[];
     hasNext: boolean;
     nextCursor?: AdminComplianceApiCursor | null;
 }
