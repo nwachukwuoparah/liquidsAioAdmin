@@ -23,7 +23,7 @@ export default function ComplianceApproveDocumentModal({
     document,
     verificationType,
 }: ComplianceApproveDocumentModalProps) {
-    const { closeModal } = useModal();
+    const { closeModal, hideAllModals } = useModal();
     const acceptReview = useAdminComplianceReviewAccept();
 
     const handleApprove = () => {
@@ -36,7 +36,15 @@ export default function ComplianceApproveDocumentModal({
                     "approve",
                 ),
             },
-            { onSuccess: () => closeModal() },
+            {
+                onSuccess: () => {
+                    if (typeof hideAllModals === "function") {
+                        hideAllModals();
+                    } else {
+                        closeModal();
+                    }
+                },
+            },
         );
     };
 

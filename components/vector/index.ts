@@ -57,5 +57,7 @@ export { UserPlusIcon } from "./user-plus-icon";
 export { UsersGroupIcon } from "./users-group-icon";
 export { UsersIcon } from "./users-icon";
 export { ModalCloseIcon } from "./modal-close-icon";
+export { CopyIcon } from "./copy-icon";
+export { HandPalmIcon } from "./hand-palm-icon";
 export { WarningIcon } from "./warning-icon";
 export { XCircleIcon } from "./x-circle-icon";

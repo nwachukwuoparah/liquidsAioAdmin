@@ -36,7 +36,7 @@ export default function InventorySuspendListingModal({
     lotId,
     lotTitle,
 }: InventorySuspendListingModalProps) {
-    const { closeModal } = useModal();
+    const { closeModal, hideAllModals } = useModal();
     const suspendListing = useAdminInventoryLotSuspend();
 
     const {
@@ -74,7 +74,13 @@ export default function InventorySuspendListingModal({
                         setError("reason", { message: error.message });
                     }
                 },
-                onSuccess: () => closeModal(),
+                onSuccess: () => {
+                    if (typeof hideAllModals === "function") {
+                        hideAllModals();
+                    } else {
+                        closeModal();
+                    }
+                },
             },
         );
     });

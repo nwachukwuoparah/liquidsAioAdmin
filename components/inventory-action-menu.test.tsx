@@ -43,7 +43,7 @@ describe("InventoryActionMenu", () => {
             />,
         );
 
-        expect(screen.getByText("View lot details")).toBeInTheDocument();
+        expect(screen.getByText("View lot")).toBeInTheDocument();
         expect(screen.getByText("Approve listing")).toBeInTheDocument();
         expect(screen.getByText("Decline listing")).toBeInTheDocument();
     });
@@ -63,7 +63,7 @@ describe("InventoryActionMenu", () => {
             />,
         );
 
-        fireEvent.click(screen.getByText("View lot details"));
+        fireEvent.click(screen.getByText("View lot"));
 
         expect(onClose).toHaveBeenCalled();
         expect(showModalMock).toHaveBeenCalled();

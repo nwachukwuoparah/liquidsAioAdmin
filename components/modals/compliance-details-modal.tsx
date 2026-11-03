@@ -10,9 +10,11 @@ import {
     ModalCloseIcon,
     RejectXIcon,
 } from "@/components/vector";
-import LightbulbIcon from "@/components/vector/light-bulb-icon";
 import ComplianceApproveDocumentModal from "@/components/modals/compliance-approve-document-modal";
 import ComplianceRejectDocumentModal from "@/components/modals/compliance-reject-document-modal";
+import ComplianceApproveReviewModal from "@/components/modals/compliance-approve-review-modal";
+import ComplianceRejectReviewModal from "@/components/modals/compliance-reject-review-modal";
+import ComplianceDocumentViewerModal from "@/components/modals/compliance-document-viewer-modal";
 import { useModal } from "@/context/modal-provider";
 import {
     useAdminComplianceClaim,
@@ -22,7 +24,9 @@ import {
 import type {
     ComplianceDocumentRecord,
     ComplianceDocumentStatus,
+    ComplianceVerificationType,
 } from "@/lib/compliance/types/admin-compliance-detail.types";
+import { buildCloudinaryDocumentUrl } from "@/lib/compliance/utilities/build-cloudinary-document-url";
 import { COMPLIANCE_REVIEW_MODAL_PANEL_CLASS } from "@/lib/modal/constants/modal.constant";
 import { useAdminSessionProfile } from "@/lib/auth/hooks/use-admin-session-profile";
 import { DEFAULT_ADMIN_DISPLAY_NAME } from "@/lib/auth/utilities/resolve-admin-session-profile";
@@ -31,6 +35,36 @@ import { useCallback, useMemo, type ReactNode } from "react";
 
 interface ComplianceDetailsModalProps {
     userId: string;
+}
+
+const KYC_DOCUMENT_TYPE_LABELS: Record<string, string> = {
+    gov_id: "Government ID",
+    ein: "EIN Confirmation",
+    ein_document: "EIN Confirmation",
+    w9: "W-9",
+    business_license: "Business License",
+    state_business_license: "State Business License",
+    certificate_of_incorporation: "Certificate of Incorporation",
+    articles_of_incorporation: "Articles of Incorporation",
+    bank_statement: "Bank Statement",
+    utility_bill: "Utility Bill",
+    tax_id: "Tax ID",
+    tin: "TIN Confirmation",
+};
+
+function formatDocumentType(type?: string): string {
+    if (!type?.trim()) {
+        return "Document";
+    }
+
+    const normalizedType = type.trim().toLowerCase();
+    if (KYC_DOCUMENT_TYPE_LABELS[normalizedType]) {
+        return KYC_DOCUMENT_TYPE_LABELS[normalizedType];
+    }
+
+    return type
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatDisplayDate(isoDate?: string): string {
@@ -99,17 +133,6 @@ function formatDocumentStatusLabel(status: ComplianceDocumentStatus): string {
     }
 }
 
-/** Returns true when the case already has a named assignee. */
-function hasAssignedReviewer(assignedTo?: string): boolean {
-    const trimmedAssignee = assignedTo?.trim();
-
-    if (!trimmedAssignee) {
-        return false;
-    }
-
-    return trimmedAssignee !== "—" && trimmedAssignee.toLowerCase() !== "unassigned";
-}
-
 interface DocumentActionButtonProps {
     label: string;
     onClick: () => void;
@@ -137,31 +160,29 @@ function DocumentActionButton({
             {children}
         </button>
     );
-};
+}
 
 interface ComplianceDocumentRowProps {
     document: ComplianceDocumentRecord;
-    canReviewDocuments: boolean;
+    canReview?: boolean;
     onDocumentAction: (
         document: ComplianceDocumentRecord,
         action: "approve" | "reject",
     ) => void;
-};
+    onViewDocument: (document: ComplianceDocumentRecord) => void;
+}
 
 function ComplianceDocumentRow({
     document,
-    canReviewDocuments,
+    canReview = false,
     onDocumentAction,
+    onViewDocument,
 }: ComplianceDocumentRowProps) {
     const statusClasses = getDocumentStatusClasses(document.status);
-    const isPending = document.status === "pending";
-    const showReviewActions = isPending && canReviewDocuments;
-
-    const handleView = useCallback(() => {
-        if (document.fileUrl) {
-            window.open(document.fileUrl, "_blank", "noopener,noreferrer");
-        }
-    }, [document.fileUrl]);
+    const isDecided =
+        document.status?.toLowerCase() === "approved" ||
+        document.status?.toLowerCase() === "rejected";
+    const showReviewActions = canReview && !isDecided;
 
     return (
         <div className="rounded-xl border border-[#0B0E0514] bg-[#FFFFFF] p-4">
@@ -204,6 +225,7 @@ function ComplianceDocumentRow({
                             >
                                 <ApproveCheckIcon className="h-3.5 w-4 text-[#00A341]" />
                             </DocumentActionButton>
+
                             <DocumentActionButton
                                 label="Reject"
                                 onClick={() => onDocumentAction(document, "reject")}
@@ -216,7 +238,7 @@ function ComplianceDocumentRow({
 
                     <DocumentActionButton
                         label="View"
-                        onClick={handleView}
+                        onClick={() => onViewDocument(document)}
                     >
                         <EyeIcon className="h-4 w-4 text-[#0B0E05]" />
                     </DocumentActionButton>
@@ -226,7 +248,110 @@ function ComplianceDocumentRow({
     );
 }
 
-/** Compliance review detail modal with document actions and claim controls. */
+interface ComplianceSectionReviewProps {
+    title: string;
+    subtitle?: string;
+    status: string;
+    verificationType: ComplianceVerificationType;
+    verificationId?: string;
+    canReview?: boolean;
+    onReviewAction: (
+        verificationType: ComplianceVerificationType,
+        verificationId: string,
+        action: "approve" | "reject",
+        label: string,
+    ) => void;
+    children: ReactNode;
+}
+
+function ComplianceSectionReview({
+    title,
+    subtitle,
+    status,
+    verificationType,
+    verificationId,
+    canReview = false,
+    onReviewAction,
+    children,
+}: ComplianceSectionReviewProps) {
+    const statusClasses = getReviewStatusClasses(status);
+    const label = verificationType.toUpperCase();
+
+    return (
+        <div className="space-y-3 rounded-xl border border-[#0B0E0514] bg-[#FFFFFF] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#0B0E0514] pb-3">
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                        <Typography type="text16" fontWeight={700} className="text-[#0B0E05]">
+                            {title}
+                        </Typography>
+                        <span className={`inline-block rounded-md px-2 py-0.5 ${statusClasses.bg}`}>
+                            <Typography type="text12" fontWeight={600} className={statusClasses.text}>
+                                {formatReviewStatusLabel(status)}
+                            </Typography>
+                        </span>
+                    </div>
+                    {subtitle ? (
+                        <Typography type="text12" fontWeight={400} className="text-[#0B0E05A3]">
+                            {subtitle}
+                        </Typography>
+                    ) : null}
+                </div>
+
+                {canReview &&
+                status?.toLowerCase() !== "approved" &&
+                status?.toLowerCase() !== "rejected" ? (
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            disabled={!verificationId}
+                            onClick={() => {
+                                if (verificationId) {
+                                    onReviewAction(
+                                        verificationType,
+                                        verificationId,
+                                        "approve",
+                                        `${label} submission`,
+                                    );
+                                }
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#00A34133] bg-[#00A34114] px-3.5 py-1.5 transition-colors hover:bg-[#00A34129] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <ApproveCheckIcon className="h-3.5 w-3.5 text-[#00A341]" />
+                            <Typography type="text12" fontWeight={700} className="text-[#00A341]">
+                                Approve {label}
+                            </Typography>
+                        </button>
+                        <button
+                            type="button"
+                            disabled={!verificationId}
+                            onClick={() => {
+                                if (verificationId) {
+                                    onReviewAction(
+                                        verificationType,
+                                        verificationId,
+                                        "reject",
+                                        `${label} submission`,
+                                    );
+                                }
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#CC292933] bg-[#CC292914] px-3.5 py-1.5 transition-colors hover:bg-[#CC292929] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <RejectXIcon className="h-3.5 w-3.5 text-[#CC2929]" />
+                            <Typography type="text12" fontWeight={700} className="text-[#CC2929]">
+                                Reject {label}
+                            </Typography>
+                        </button>
+                    </div>
+                ) : null}
+            </div>
+
+            <div className="space-y-3 pt-1">{children}</div>
+        </div>
+    );
+}
+
+/** Compliance review detail modal with document actions and full KYC/KYB controls. */
 export default function ComplianceDetailsModal({ userId }: ComplianceDetailsModalProps) {
     const { closeModal, showModal } = useModal();
     const { sessionProfile } = useAdminSessionProfile();
@@ -234,24 +359,164 @@ export default function ComplianceDetailsModal({ userId }: ComplianceDetailsModa
     const claimMutation = useAdminComplianceClaim(userId);
     const unclaimMutation = useAdminComplianceUnclaim(userId);
 
-    const detail = detailQuery.data;
+    const rawData = (detailQuery.data as any)?.data ?? detailQuery.data;
+    const complianceData = rawData?.complianceData ?? rawData;
+    const kyb = rawData?.kyb ?? complianceData?.kyb;
+    const kyc = rawData?.kyc ?? complianceData?.kyc;
+
+    const firstName = complianceData?.firstName ?? kyc?.firstName ?? rawData?.firstName ?? "";
+    const lastName = complianceData?.lastName ?? kyc?.lastName ?? rawData?.lastName ?? "";
+    const email = complianceData?.email ?? rawData?.email ?? "";
+    const profilePicture = complianceData?.profilePicture ?? rawData?.profilePicture ?? undefined;
+
+    const fullName = useMemo(
+        () => [firstName, lastName].filter(Boolean).join(" ").trim(),
+        [firstName, lastName],
+    );
+
     const profileName = useMemo(
-        () => getProfileDisplayName(detail?.firstName, detail?.lastName, detail?.email),
-        [detail?.email, detail?.firstName, detail?.lastName],
+        () => getProfileDisplayName(firstName, lastName, email),
+        [email, firstName, lastName],
     );
 
     const avatarName = useMemo(
-        () => [detail?.firstName, detail?.lastName].filter(Boolean).join(" ").trim(),
-        [detail?.firstName, detail?.lastName],
+        () => fullName || email,
+        [fullName, email],
     );
 
-    const accountTypeLabel =
-        detail?.accountType === "seller" ? "SELLER ACCOUNT" : "BUYER ACCOUNT";
-    const reviewStatusClasses = getReviewStatusClasses(detail?.complianceReviewStatus);
-    const isAssigned = hasAssignedReviewer(detail?.assignedTo);
-    const assignedReviewerLabel = isAssigned ? (detail?.assignedTo ?? "Unassigned") : "Unassigned";
+    const rawKybDocs: any[] = useMemo(() => {
+        return (
+            kyb?.kybDocuments ??
+            kyb?.documents ??
+            complianceData?.kybDocuments ??
+            rawData?.kybDocuments ??
+            []
+        );
+    }, [complianceData?.kybDocuments, kyb?.documents, kyb?.kybDocuments, rawData?.kybDocuments]);
+
+    const rawKycDocs: any[] = useMemo(() => {
+        return (
+            kyc?.kycDocuments ??
+            kyc?.documents ??
+            complianceData?.kycDocuments ??
+            complianceData?.documents ??
+            rawData?.kycDocuments ??
+            rawData?.documents ??
+            []
+        );
+    }, [
+        complianceData?.documents,
+        complianceData?.kycDocuments,
+        kyc?.documents,
+        kyc?.kycDocuments,
+        rawData?.documents,
+        rawData?.kycDocuments,
+    ]);
+
+    const isSeller = Boolean(
+        kyb ||
+            rawKybDocs.length > 0 ||
+            complianceData?.accountType?.toLowerCase() === "seller" ||
+            rawData?.accountType?.toLowerCase() === "seller",
+    );
+    const accountTypeLabel = isSeller ? "SELLER ACCOUNT" : "BUYER ACCOUNT";
+
+    const complianceReviewStatus =
+        complianceData?.complianceReviewStatus ??
+        rawData?.complianceReviewStatus ??
+        kyc?.status ??
+        kyb?.status ??
+        "pending";
+    const reviewStatusClasses = getReviewStatusClasses(complianceReviewStatus);
+
+    const assignment =
+        complianceData?.complianceReviewAssignment ?? rawData?.complianceReviewAssignment;
+    const isClaimed =
+        assignment?.status === "claimed" || Boolean((rawData as any)?.assignedTo);
+    const assignedAdmin = assignment?.assignedAdmin;
+    const assignedAdminName =
+        (rawData as any)?.assignedTo ||
+        (assignedAdmin
+            ? [assignedAdmin.firstName, assignedAdmin.lastName].filter(Boolean).join(" ").trim() ||
+              assignedAdmin.email ||
+              "Claimed"
+            : isClaimed
+              ? "Claimed"
+              : "Unassigned");
+
+    const isCaseApproved =
+        complianceReviewStatus?.toLowerCase() === "approved" ||
+        (kyc?.status?.toLowerCase() === "approved" &&
+            (!isSeller || kyb?.status?.toLowerCase() === "approved"));
+
+    const isAssigned = isClaimed;
+    const assignedReviewerLabel = isAssigned ? assignedAdminName : "Unassigned";
     const isClaimActionPending = claimMutation.isPending || unclaimMutation.isPending;
     const canReviewDocuments = isAssigned;
+
+    const kybDocuments = useMemo<ComplianceDocumentRecord[]>(() => {
+        return rawKybDocs.map((doc: any, index: number) => ({
+            id: doc.id ?? doc.kybDocumentId ?? doc.documentId ?? `kyb-doc-${index}`,
+            title: doc.originalFilename?.trim() || doc.title?.trim() || formatDocumentType(doc.type),
+            category: formatDocumentType(doc.type),
+            submittedAt: doc.createdAt ?? doc.submittedAt ?? "",
+            status: (doc.status || "pending") as ComplianceDocumentStatus,
+            fileUrl: doc.fileUrl || buildCloudinaryDocumentUrl(doc.fileId, doc.format),
+            fileId: doc.fileId,
+            format: doc.format,
+            verificationType: "kyb" as const,
+        }));
+    }, [rawKybDocs]);
+
+    const kycDocuments = useMemo<ComplianceDocumentRecord[]>(() => {
+        return rawKycDocs.map((doc: any, index: number) => ({
+            id: doc.id ?? doc.kycDocumentId ?? doc.documentId ?? `kyc-doc-${index}`,
+            title: doc.originalFilename?.trim() || doc.title?.trim() || formatDocumentType(doc.type),
+            category: formatDocumentType(doc.type),
+            submittedAt: doc.createdAt ?? doc.submittedAt ?? "",
+            status: (doc.status || "pending") as ComplianceDocumentStatus,
+            fileUrl: doc.fileUrl || buildCloudinaryDocumentUrl(doc.fileId, doc.format),
+            fileId: doc.fileId,
+            format: doc.format,
+            verificationType: "kyc" as const,
+        }));
+    }, [rawKycDocs]);
+
+    const allDocuments = useMemo(
+        () => [...kybDocuments, ...kycDocuments],
+        [kybDocuments, kycDocuments],
+    );
+
+    const documentsTotalCount = allDocuments.length;
+    const documentsApprovedCount = allDocuments.filter((d) => d.status === "approved").length;
+    const submittedAt =
+        kyb?.createdAt ??
+        kyc?.createdAt ??
+        complianceData?.complianceUpdatedAt ??
+        rawData?.complianceUpdatedAt ??
+        "";
+    const complianceUpdatedAt =
+        complianceData?.complianceUpdatedAt ??
+        rawData?.complianceUpdatedAt ??
+        kyb?.updatedAt ??
+        kyc?.updatedAt ??
+        "";
+
+    const kybVerificationId =
+        kyb?.id ??
+        (kyb as any)?.kybId ??
+        (complianceData as any)?.kybId ??
+        (rawData as any)?.kybId ??
+        (rawKybDocs?.[0] as any)?.kybId ??
+        "";
+
+    const kycVerificationId =
+        kyc?.id ??
+        (kyc as any)?.kycId ??
+        (complianceData as any)?.kycId ??
+        (rawData as any)?.kycId ??
+        (rawKycDocs?.[0] as any)?.kycId ??
+        "";
 
     const handleClaim = useCallback(() => {
         claimMutation.mutate(sessionProfile?.displayName ?? DEFAULT_ADMIN_DISPLAY_NAME);
@@ -259,9 +524,7 @@ export default function ComplianceDetailsModal({ userId }: ComplianceDetailsModa
 
     const handleDocumentAction = useCallback(
         (document: ComplianceDocumentRecord, action: "approve" | "reject") => {
-            if (!detail) {
-                return;
-            }
+            const verificationType = document.verificationType ?? (isSeller ? "kyb" : "kyc");
 
             if (action === "approve") {
                 showModal({
@@ -269,7 +532,7 @@ export default function ComplianceDetailsModal({ userId }: ComplianceDetailsModa
                         <ComplianceApproveDocumentModal
                             userId={userId}
                             document={document}
-                            verificationType={detail.verificationType}
+                            verificationType={verificationType}
                         />
                     ),
                     panelClassName: COMPLIANCE_REVIEW_MODAL_PANEL_CLASS,
@@ -282,20 +545,78 @@ export default function ComplianceDetailsModal({ userId }: ComplianceDetailsModa
                     <ComplianceRejectDocumentModal
                         userId={userId}
                         document={document}
-                        verificationType={detail.verificationType}
+                        verificationType={verificationType}
                     />
                 ),
                 panelClassName: COMPLIANCE_REVIEW_MODAL_PANEL_CLASS,
             });
         },
-        [detail, showModal, userId],
+        [isSeller, showModal, userId],
     );
+
+    const handleFullReviewAction = useCallback(
+        (
+            verificationType: ComplianceVerificationType,
+            verificationId: string,
+            action: "approve" | "reject",
+            label: string,
+        ) => {
+            if (action === "approve") {
+                showModal({
+                    content: (
+                        <ComplianceApproveReviewModal
+                            userId={userId}
+                            verificationType={verificationType}
+                            verificationId={verificationId}
+                            targetLabel={label}
+                        />
+                    ),
+                    panelClassName: COMPLIANCE_REVIEW_MODAL_PANEL_CLASS,
+                });
+                return;
+            }
+
+            showModal({
+                content: (
+                    <ComplianceRejectReviewModal
+                        userId={userId}
+                        verificationType={verificationType}
+                        verificationId={verificationId}
+                        targetLabel={label}
+                    />
+                ),
+                panelClassName: COMPLIANCE_REVIEW_MODAL_PANEL_CLASS,
+            });
+        },
+        [showModal, userId],
+    );
+
+    const handleViewDocument = useCallback(
+        (document: ComplianceDocumentRecord) => {
+            const verificationType = document.verificationType ?? (isSeller ? "kyb" : "kyc");
+            showModal({
+                content: (
+                    <ComplianceDocumentViewerModal
+                        userId={userId}
+                        document={document}
+                        verificationType={verificationType}
+                        canReview={canReviewDocuments}
+                    />
+                ),
+                panelClassName: "w-full max-w-6xl p-0 bg-transparent border-0 shadow-none",
+            });
+        },
+        [canReviewDocuments, isSeller, showModal, userId],
+    );
+
+    const showKybSection = isSeller || Boolean(kyb) || kybDocuments.length > 0;
+    const showKycSection = !isSeller || Boolean(kyc) || kycDocuments.length > 0 || !showKybSection;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center md:p-4">
-            <div className="flex h-full w-full flex-col overflow-y-auto bg-white md:h-auto md:max-h-[90vh] md:w-[55%] md:rounded-[13px]">
+            <div className="flex h-full w-full flex-col overflow-hidden bg-white md:h-[90vh] md:max-h-[90vh] md:w-[58%] md:rounded-[13px] md:shadow-2xl">
 
-                <div className="flex items-center justify-between border-b border-[#0B0E0514] px-5 py-3">
+                <div className="sticky top-0 z-20 flex shrink-0 items-center justify-between border-b border-[#0B0E0514] bg-white px-5 py-3.5">
                     <div className="flex items-center">
                         <button
                             type="button"
@@ -309,134 +630,191 @@ export default function ComplianceDetailsModal({ userId }: ComplianceDetailsModa
                             Compliance details
                         </Typography>
                     </div>
-                    <ModalCloseIcon
-                        className="hidden h-5 w-5 cursor-pointer text-[#0B0E05] md:block"
+                    <button
+                        type="button"
                         onClick={closeModal}
-                    />
+                        aria-label="Close"
+                        className="hidden rounded-lg p-1 text-[#0B0E05] hover:bg-[#0B0E050A] md:block"
+                    >
+                        <ModalCloseIcon className="h-5 w-5 cursor-pointer text-[#0B0E05]" />
+                    </button>
                 </div>
 
-                <div className="flex-1 space-y-6 p-5 md:p-6">
+                <div className="flex-1 overflow-y-auto space-y-6 p-5 md:p-6">
                     {detailQuery.isLoading ? (
                         <div className="space-y-4 animate-pulse">
                             <div className="h-16 rounded-xl bg-[#0B0E050A]" />
                             <div className="h-28 rounded-xl bg-[#0B0E050A]" />
                             <div className="h-40 rounded-xl bg-[#0B0E050A]" />
                         </div>
-                    ) : detailQuery.isError && !detail ? (
+                    ) : detailQuery.isError && !rawData ? (
                         <EmptyDetailState message="Unable to load compliance details." />
-                    ) : detail ? (
+                    ) : rawData ? (
                         <>
-                            <div className="flex flex-col gap-2 rounded-xl border border-[#0B0E0514] bg-[#DC68030A] p-3">
-                                <div className="flex items-center gap-2">
-                                    <LightbulbIcon className="h-5 w-5 text-[#DC6803]" />
-                                    <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">
-                                        Reviewer Tip
-                                    </Typography>
-                                </div>
-                                <Typography type="text14" fontWeight={400} className="leading-relaxed text-[#0B0E05]">
-                                    Approve only when all documents are verified and clear. Reject only when the
-                                    application clearly fails compliance &amp; is irredeemable.
-                                </Typography>
-                            </div>
-
-                            <div className="flex flex-col justify-between gap-4 border-y border-[#0B0E0514] py-5 md:flex-row md:items-center">
-                                <div className="flex flex-1 gap-4 md:border-r md:pr-6">
+                            <div className="flex flex-col justify-between gap-4 border-b border-[#0B0E0514] pb-5 md:flex-row md:items-center">
+                                <div className="flex flex-1 items-center gap-4">
                                     <ProfileAvatar
                                         size="xxl"
                                         name={avatarName}
-                                        email={detail.email}
-                                        imageUrl={detail.profilePicture}
+                                        email={email}
+                                        imageUrl={profilePicture}
                                     />
                                     <div className="flex flex-col">
-                                        <Typography type="text16" fontWeight={700} className="text-[#0B0E05]">
-                                            {profileName}
-                                        </Typography>
-                                        <Typography type="text14" fontWeight={400} className="text-[#0B0E05]">
-                                            {detail.email}
+                                        {fullName ? (
+                                            <Typography type="text16" fontWeight={700} className="text-[#0B0E05]">
+                                                {fullName}
+                                            </Typography>
+                                        ) : null}
+                                        <Typography
+                                            type={fullName ? "text14" : "text16"}
+                                            fontWeight={fullName ? 400 : 700}
+                                            className={fullName ? "text-[#0B0E05A3]" : "text-[#0B0E05]"}
+                                        >
+                                            {email || profileName}
                                         </Typography>
                                         <Typography
                                             type="text12"
                                             fontWeight={700}
-                                            className={detail.accountType === "seller" ? "text-[#518300]" : "text-[#00A341]"}
+                                            className={isSeller ? "text-[#518300]" : "text-[#00A341]"}
                                         >
                                             {accountTypeLabel}
                                         </Typography>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-1 flex-col gap-3 md:items-end">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Typography type="text14" fontWeight={700} className="shrink-0 text-slate-900">
-                                            Assigned to:
-                                        </Typography>
-                                        <Typography
-                                            type="text14"
-                                            fontWeight={600}
-                                            className="text-[#0B0E05]"
-                                            data-testid="compliance-assigned-reviewer"
-                                        >
-                                            {assignedReviewerLabel}
-                                        </Typography>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            type="button"
-                                            aria-label="Claim compliance case"
-                                            data-testid="compliance-claim-button"
-                                            disabled={isAssigned || isClaimActionPending}
-                                            onClick={handleClaim}
-                                            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-transparent bg-[#B1EC52] px-4 py-2 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            {claimMutation.isPending ? (
-                                                <span
-                                                    className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-[#0B0E05]/25 border-t-[#0B0E05]"
-                                                    aria-hidden
-                                                />
-                                            ) : null}
-                                            <Typography type="text12" fontWeight={700} className="text-[#0B0E05]">
-                                                {claimMutation.isPending ? "Claiming..." : "Claim"}
+                                {!isCaseApproved ? (
+                                    <div className="flex flex-col gap-2.5 md:items-end">
+                                        <div className="flex items-center gap-2">
+                                            <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">
+                                                Assigned to:
                                             </Typography>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            aria-label="Unclaim compliance case"
-                                            data-testid="compliance-unclaim-button"
-                                            disabled={!isAssigned || isClaimActionPending}
-                                            onClick={() => unclaimMutation.mutate()}
-                                            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#0B0E0514] bg-[#FFFFFF] px-4 py-2 transition-colors hover:bg-[#0B0E050A] disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            {unclaimMutation.isPending ? (
-                                                <span
-                                                    className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-[#0B0E05]/25 border-t-[#0B0E05]"
-                                                    aria-hidden
-                                                />
-                                            ) : null}
-                                            <Typography type="text12" fontWeight={700} className="text-[#0B0E05]">
-                                                {unclaimMutation.isPending ? "Unclaiming..." : "Unclaim"}
+                                            <Typography
+                                                type="text14"
+                                                fontWeight={600}
+                                                className="text-[#0B0E05]"
+                                                data-testid="compliance-assigned-reviewer"
+                                            >
+                                                {assignedReviewerLabel}
                                             </Typography>
-                                        </button>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                type="button"
+                                                aria-label="Claim compliance case"
+                                                data-testid="compliance-claim-button"
+                                                disabled={isAssigned || isClaimActionPending}
+                                                onClick={handleClaim}
+                                                className="inline-flex items-center justify-center gap-1.5 rounded-full border border-transparent bg-[#B1EC52] px-6 py-2 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {claimMutation.isPending ? (
+                                                    <span
+                                                        className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-[#0B0E05]/25 border-t-[#0B0E05]"
+                                                        aria-hidden
+                                                    />
+                                                ) : null}
+                                                <Typography type="text14" fontWeight={700} className="text-[#0B0E05]">
+                                                    {claimMutation.isPending ? "Claiming..." : "Claim"}
+                                                </Typography>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                aria-label="Unclaim compliance case"
+                                                data-testid="compliance-unclaim-button"
+                                                disabled={!isAssigned || isClaimActionPending}
+                                                onClick={() => unclaimMutation.mutate()}
+                                                className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#0B0E0514] bg-[#FFFFFF] px-6 py-2 transition-colors hover:bg-[#0B0E050A] disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {unclaimMutation.isPending ? (
+                                                    <span
+                                                        className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-[#0B0E05]/25 border-t-[#0B0E05]"
+                                                        aria-hidden
+                                                    />
+                                                ) : null}
+                                                <Typography type="text14" fontWeight={600} className="text-[#0B0E05]">
+                                                    {unclaimMutation.isPending ? "Unclaiming..." : "Unclaim"}
+                                                </Typography>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : null}
                             </div>
 
                             <ComplianceSummaryBar
-                                detail={detail}
+                                reviewStatus={complianceReviewStatus}
+                                submittedAt={submittedAt}
+                                documentsApprovedCount={documentsApprovedCount}
+                                documentsTotalCount={documentsTotalCount}
+                                complianceUpdatedAt={complianceUpdatedAt}
                                 reviewStatusClasses={reviewStatusClasses}
                             />
 
-                            <div className="space-y-3">
-                                <Typography type="text16" fontWeight={700} className="text-[#0B0E05]">
-                                    Uploaded documents
-                                </Typography>
-                                {detail.documents.map((document) => (
-                                    <ComplianceDocumentRow
-                                        key={document.id}
-                                        document={document}
-                                        canReviewDocuments={canReviewDocuments}
-                                        onDocumentAction={handleDocumentAction}
-                                    />
-                                ))}
-                            </div>
+                            {/* Business Verification (KYB) */}
+                            {showKybSection ? (
+                                <ComplianceSectionReview
+                                    title="Business Verification (KYB)"
+                                    subtitle={kyb?.businessName ? `Business: ${kyb.businessName}` : undefined}
+                                    status={kyb?.status ?? complianceReviewStatus}
+                                    verificationType="kyb"
+                                    verificationId={kybVerificationId}
+                                    canReview={canReviewDocuments}
+                                    onReviewAction={handleFullReviewAction}
+                                >
+                                    {kybDocuments.length > 0 ? (
+                                        kybDocuments.map((document) => (
+                                            <ComplianceDocumentRow
+                                                key={document.id}
+                                                document={document}
+                                                canReview={canReviewDocuments}
+                                                onDocumentAction={handleDocumentAction}
+                                                onViewDocument={handleViewDocument}
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="rounded-lg bg-[#0B0E0505] p-3 text-center">
+                                            <Typography type="text12" fontWeight={400} className="text-[#0B0E05A3]">
+                                                No KYB documents uploaded.
+                                            </Typography>
+                                        </div>
+                                    )}
+                                </ComplianceSectionReview>
+                            ) : null}
+
+                            {/* Identity Verification (KYC) */}
+                            {showKycSection ? (
+                                <ComplianceSectionReview
+                                    title="Identity Verification (KYC)"
+                                    subtitle={
+                                        kyc?.firstName || kyc?.lastName
+                                            ? `Name: ${[kyc.firstName, kyc.lastName].filter(Boolean).join(" ")}`
+                                            : firstName || lastName
+                                              ? `Name: ${[firstName, lastName].filter(Boolean).join(" ")}`
+                                              : undefined
+                                    }
+                                    status={kyc?.status ?? complianceReviewStatus}
+                                    verificationType="kyc"
+                                    verificationId={kycVerificationId}
+                                    canReview={canReviewDocuments}
+                                    onReviewAction={handleFullReviewAction}
+                                >
+                                    {kycDocuments.length > 0 ? (
+                                        kycDocuments.map((document) => (
+                                            <ComplianceDocumentRow
+                                                key={document.id}
+                                                document={document}
+                                                canReview={canReviewDocuments}
+                                                onDocumentAction={handleDocumentAction}
+                                                onViewDocument={handleViewDocument}
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="rounded-lg bg-[#0B0E0505] p-3 text-center">
+                                            <Typography type="text12" fontWeight={400} className="text-[#0B0E05A3]">
+                                                No KYC documents uploaded.
+                                            </Typography>
+                                        </div>
+                                    )}
+                                </ComplianceSectionReview>
+                            ) : null}
                         </>
                     ) : null}
                 </div>
@@ -446,16 +824,18 @@ export default function ComplianceDetailsModal({ userId }: ComplianceDetailsModa
 }
 
 function ComplianceSummaryBar({
-    detail,
+    reviewStatus,
+    submittedAt,
+    documentsApprovedCount,
+    documentsTotalCount,
+    complianceUpdatedAt,
     reviewStatusClasses,
 }: {
-    detail: {
-        complianceReviewStatus: string;
-        submittedAt: string;
-        documentsApprovedCount: number;
-        documentsTotalCount: number;
-        complianceUpdatedAt: string;
-    };
+    reviewStatus: string;
+    submittedAt: string;
+    documentsApprovedCount: number;
+    documentsTotalCount: number;
+    complianceUpdatedAt: string;
     reviewStatusClasses: { bg: string; text: string };
 }) {
     return (
@@ -466,18 +846,18 @@ function ComplianceSummaryBar({
                         <span
                             className={`inline-flex shrink-0 rounded-md px-2.5 py-0.5 text-xs font-semibold leading-none no-underline ${reviewStatusClasses.bg} ${reviewStatusClasses.text}`}
                         >
-                            {formatReviewStatusLabel(detail.complianceReviewStatus)}
+                            {formatReviewStatusLabel(reviewStatus)}
                         </span>
                     </SummaryRow>
-                    <SummaryRow label="Submitted" value={formatDisplayDate(detail.submittedAt)} />
+                    <SummaryRow label="Submitted" value={formatDisplayDate(submittedAt)} />
                 </div>
 
                 <div className="flex flex-col gap-3">
                     <SummaryRow
                         label="Documents approved"
-                        value={`${detail.documentsApprovedCount} of ${detail.documentsTotalCount}`}
+                        value={`${documentsApprovedCount} of ${documentsTotalCount}`}
                     />
-                    <SummaryRow label="Last updated" value={formatDisplayDate(detail.complianceUpdatedAt)} />
+                    <SummaryRow label="Last updated" value={formatDisplayDate(complianceUpdatedAt)} />
                 </div>
             </div>
         </div>

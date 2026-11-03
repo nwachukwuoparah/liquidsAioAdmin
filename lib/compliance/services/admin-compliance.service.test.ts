@@ -87,8 +87,8 @@ describe("fetchAdminComplianceDetail", () => {
         const detail = await fetchAdminComplianceDetail("019e7442-961a-71bf-b77a-d7f766a3aac7");
 
         expect(apiClient.get).toHaveBeenCalledWith("/compliance/019e7442-961a-71bf-b77a-d7f766a3aac7");
-        expect(detail.email).toBe("verify1@dummyinbox.com");
-        expect(detail.firstName).toBe("Nwachukwu");
+        expect(detail.complianceData.email).toBe("verify1@dummyinbox.com");
+        expect(detail.complianceData.firstName).toBe("Nwachukwu");
     });
 });
 
@@ -178,24 +178,37 @@ describe("postAdminComplianceClaim", () => {
     });
 });
 
-describe("postAdminComplianceUnclaim", () => {
-    it("posts to the unclaim endpoint for a compliance user id", async () => {
+describe("fetchAdminComplianceDocumentViewingLink", () => {
+    it("fetches viewing link with file_id, format, and type", async () => {
         const { apiClient } = await import("@/lib/api/api-client");
 
-        vi.mocked(apiClient.post).mockResolvedValue({
+        vi.mocked(apiClient.get).mockResolvedValue({
             setupToken: null,
             token: null,
             refreshTokenExpiry: null,
             body: {
                 status: "success",
-                message: "Case released.",
+                data: {
+                    viewingLink: "https://res.cloudinary.com/signed/test.pdf",
+                },
             },
         });
 
-        const { postAdminComplianceUnclaim } = await import("./admin-compliance.service");
-        const response = await postAdminComplianceUnclaim("user-1");
+        const { fetchAdminComplianceDocumentViewingLink } = await import("./admin-compliance.service");
+        const response = await fetchAdminComplianceDocumentViewingLink({
+            file_id: "compliance/test/gov-id",
+            format: "pdf",
+            type: "kyc",
+        });
 
-        expect(apiClient.post).toHaveBeenCalledWith("/compliance/user-1/unclaim");
-        expect(response.message).toBe("Case released.");
+        expect(apiClient.get).toHaveBeenCalledWith(
+            "/compliance/documents/viewing-link",
+            {
+                file_id: "compliance/test/gov-id",
+                format: "pdf",
+                type: "kyc",
+            },
+        );
+        expect(response.viewingLink).toBe("https://res.cloudinary.com/signed/test.pdf");
     });
 });

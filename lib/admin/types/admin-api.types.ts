@@ -8,6 +8,9 @@ export interface AdminApiSuccessResponse<TData> {
 export interface AdminOrderRecord {
     id: string;
     orderId: string;
+    rawId?: string;
+    internalId?: string;
+    uuid?: string;
     title: string;
     seller: string;
     buyer: string;
@@ -16,6 +19,8 @@ export interface AdminOrderRecord {
     orderStatus: string;
     date: string;
     colorBg: string;
+    thumbnailUrl?: string;
+    alert?: boolean;
 }
 
 export interface AdminOrderStatRecord {

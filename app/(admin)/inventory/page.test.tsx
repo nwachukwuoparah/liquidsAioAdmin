@@ -40,7 +40,7 @@ const SAMPLE_LOT_API_RECORD = {
 
 function mockInventoryApiResponses() {
     getMock.mockImplementation(async (path: string, params: Record<string, string> = {}) => {
-        if (path.includes("/lots/admin-overview")) {
+        if (path.includes("/lots/overview") || path.includes("/lots/admin-overview")) {
             return {
                 body: {
                     status: "success",
@@ -239,6 +239,21 @@ describe("AllLotsContentSection mobile layout", () => {
         });
     });
 
+    it("filters lots by partial title keyword like 'mixed'", async () => {
+        mockInventoryApiResponses();
+        renderWithQueryClient(<AllLotsContentSection />);
+
+        expect(await screen.findAllByText(/Mixed electronics pallet/)).toHaveLength(2);
+
+        fireEvent.change(screen.getAllByPlaceholderText("Search lots by title")[0], {
+            target: { value: "mixed" },
+        });
+
+        await waitFor(() => {
+            expect(screen.getAllByText(/Mixed electronics pallet/).length).toBeGreaterThan(0);
+        });
+    });
+
     it("passes page and limit params to GET /lots", async () => {
         mockInventoryApiResponses();
         renderWithQueryClient(<AllLotsContentSection />);
@@ -279,5 +294,88 @@ describe("AllLotsContentSection mobile layout", () => {
         expect(screen.getAllByRole("button", { name: /Pending approval 12/ }).length).toBeGreaterThan(0);
         expect(screen.getAllByRole("button", { name: /Reported 3/ }).length).toBeGreaterThan(0);
         expect(screen.getAllByRole("button", { name: /Suspended 1/ }).length).toBeGreaterThan(0);
+    });
+
+    it("renders the period filter on the Overview section and allows changing period", async () => {
+        mockInventoryApiResponses();
+        renderWithQueryClient(<AllLotsContentSection />);
+
+        // Overview header and PeriodDropdown defaults to "This week"
+        expect(screen.getByText("Overview")).toBeDefined();
+        const periodButton = screen.getByRole("button", { name: /This week/i });
+        expect(periodButton).toBeDefined();
+
+        // Check that GET /lots/overview was called with start and end params for "This week"
+        await waitFor(() => {
+            expect(getMock).toHaveBeenCalledWith(
+                "/lots/overview",
+                expect.objectContaining({
+                    start: expect.any(String),
+                    end: expect.any(String),
+                }),
+            );
+        });
+
+        // Open dropdown and switch to "This month"
+        fireEvent.click(periodButton);
+        const thisMonthOption = await screen.findByRole("button", { name: "This month" });
+        fireEvent.click(thisMonthOption);
+
+        await waitFor(() => {
+            expect(screen.getByRole("button", { name: /This month/i })).toBeDefined();
+        });
+    });
+
+    it("does not render unsupported sellerStatus or location filters on the desktop toolbar", async () => {
+        mockInventoryApiResponses();
+        renderWithQueryClient(<AllLotsContentSection />);
+
+        expect((await screen.findAllByText("John stockton")).length).toBeGreaterThan(0);
+        expect(screen.queryByRole("button", { name: /Seller status/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /Location/i })).not.toBeInTheDocument();
+    });
+
+    it("applies in_review lot status filter on desktop", async () => {
+        mockInventoryApiResponses();
+        renderWithQueryClient(<AllLotsContentSection />);
+
+        expect((await screen.findAllByText("John stockton")).length).toBeGreaterThan(0);
+
+        const lotStatusFilterBtn = screen.getByRole("button", { name: /Lot Status/i });
+        fireEvent.click(lotStatusFilterBtn);
+
+        const inReviewOption = await screen.findByRole("option", { name: "In review" });
+        fireEvent.click(inReviewOption);
+
+        await waitFor(() => {
+            expect(getMock).toHaveBeenCalledWith(
+                "/lots",
+                expect.objectContaining({
+                    review_status: "in_review",
+                }),
+            );
+        });
+    });
+
+    it("applies refurbished condition filter on desktop", async () => {
+        mockInventoryApiResponses();
+        renderWithQueryClient(<AllLotsContentSection />);
+
+        expect((await screen.findAllByText("John stockton")).length).toBeGreaterThan(0);
+
+        const conditionFilterBtn = screen.getByRole("button", { name: /Condition/i });
+        fireEvent.click(conditionFilterBtn);
+
+        const refurbishedOption = await screen.findByRole("option", { name: "Refurbished" });
+        fireEvent.click(refurbishedOption);
+
+        await waitFor(() => {
+            expect(getMock).toHaveBeenCalledWith(
+                "/lots",
+                expect.objectContaining({
+                    condition: "refurbished",
+                }),
+            );
+        });
     });
 });

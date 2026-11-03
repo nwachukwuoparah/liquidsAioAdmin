@@ -9,6 +9,7 @@ import {
     StatCardsSkeleton,
 } from "@/components/skeletons";
 import DynamicFilters, { type FilterConfig } from "@/components/dynamic-filters";
+import UserFiltersModal from "@/components/modals/user-filters-modal";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import SearchInput from "@/components/search-input";
 import Typography from "@/components/typography";
@@ -16,8 +17,6 @@ import UserActionMenu from "@/components/user-action-menu";
 import {
     AllUsersIcon,
     CalendarDotsIcon,
-    FirstAidIcon,
-    MapPinIcon,
     ShieldIcon,
     SlidersHorizontalIcon,
     UserCheckIcon,
@@ -25,9 +24,19 @@ import {
     UsersGroupIcon,
     WarningIcon,
 } from "@/components/vector";
+import { useModal } from "@/context/modal-provider";
 import { useAdminUsers, useAdminUserStats, useAdminUserTabCounts } from "@/lib/admin/hooks";
 import { PANEL_CARD_CLASS, PANEL_CARD_SHELL_CLASS, STAT_CARD_CLASS } from "@/lib/card-styles";
 import { formatCount } from "@/lib/format-count";
+import { parseAdminUsersResponse } from "@/lib/users/utilities/parse-admin-users-response";
+import {
+    applyUserFilterChange,
+    buildUserListQueryParams,
+    countActiveUserFilters,
+    USER_ACCOUNT_STATUS_OPTIONS,
+    USER_DATE_OPTIONS,
+    USER_VERIFICATION_OPTIONS,
+} from "@/lib/users/utilities/user-filter-params";
 import {
     getUserAccountStatusStyles,
     getUserVerificationStatusStyles,
@@ -42,29 +51,19 @@ const USER_SEGMENT_TABS: { id: "buyer" | "seller" | "reported"; label: string; c
 
 const userFilters = [
     {
-        id: "verification",
-        label: "Verification status",
+        id: "complianceStatus",
+        label: "Compliance status",
         icon: <ShieldIcon className="h-[16px] w-[15px] text-[#343330]" />,
     },
     {
-        id: "status",
+        id: "accountStatus",
         label: "Account status",
         icon: <AllUsersIcon className="h-5 w-5 text-[#343330]" />,
-    },
-    {
-        id: "health",
-        label: "Account health",
-        icon: <FirstAidIcon className="h-5 w-5 text-[#343330]" />,
     },
     {
         id: "joinedDate",
         label: "Joined date",
         icon: <CalendarDotsIcon className="h-5 w-5 text-[#343330]" />,
-    },
-    {
-        id: "location",
-        label: "Location",
-        icon: <MapPinIcon className="h-5 w-5 text-[#343330]" />,
     },
 ] as const;
 
@@ -73,16 +72,20 @@ export default function AllUsersBody() {
     const [activeSegmentTab, setActiveSegmentTab] = useState<"buyer" | "seller" | "reported">("buyer");
     const [searchQuery, setSearchQuery] = useState("");
     const [actionMenuUserSn, setActionMenuUserSn] = useState<number | null>(null);
+    const { showModal } = useModal();
 
     // Unified operational state for API filter query parameters
     const [filterParams, setFilterParams] = useState<Record<string, string>>({});
 
+    const userListQueryParams = useMemo(() => {
+        return buildUserListQueryParams(filterParams, {
+            activeSegmentTab,
+            searchQuery,
+        });
+    }, [activeSegmentTab, filterParams, searchQuery]);
+
     // API Hooks passing parameters dynamically from state
-    const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useAdminUsers({
-        ...filterParams,
-        accountType: activeSegmentTab,
-        ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
-    });
+    const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useAdminUsers(userListQueryParams);
 
     const { data: userStats, isLoading: isLoadingUserStats, error: userStatsError } = useAdminUserStats();
 
@@ -125,83 +128,59 @@ export default function AllUsersBody() {
         },
     ] as const, [userStats]);
 
-    const verificationOptions = ["All statuses", "Pending", "In Review", "Needs info", "Approved", "Rejected"];
-    const accountStatusOptions = ["All", "Active", "Suspended"];
-    const dateOptions = ["All time", "Last 7 days", "Last 30 days", "Last 90 days"];
-    const staticLocations = ["All locations", "Philadelphia, PA 19107", "Cleveland, OH 44115", "San Francisco, CA 94103", "Orlando, FL 32801", "Atlanta, GA 30303"];
-
     const userFilterBlueprints: FilterConfig[] = [
         {
             id: "complianceStatus",
             label: "Compliance status",
-            defaultValue: "",
-            options: verificationOptions,
+            defaultValue: "All statuses",
+            options: [...USER_VERIFICATION_OPTIONS],
             icon: userFilters[0].icon,
         },
         {
             id: "accountStatus",
             label: "Account status",
             defaultValue: "All",
-            options: accountStatusOptions,
+            options: [...USER_ACCOUNT_STATUS_OPTIONS],
             icon: userFilters[1].icon,
         },
         {
             id: "joinedDate",
             label: "Joined date",
             defaultValue: "All time",
-            options: dateOptions,
-            icon: userFilters[3].icon,
-        },
-        {
-            id: "location",
-            label: "Location",
-            defaultValue: "All locations",
-            isSearchable: true,
-            searchPlaceholder: "Search location...",
-            options: staticLocations,
-            icon: userFilters[4].icon,
+            options: [...USER_DATE_OPTIONS],
+            customRangeKind: "date",
+            icon: userFilters[2].icon,
         },
     ];
 
     const selectedUserFilters = useMemo(
         () => ({
-            complianceStatus: filterParams.complianceStatus,
-            accountStatus: filterParams.accountStatus,
-            joinedDate: filterParams.joinedDate,
-            location: filterParams.location,
+            complianceStatus: filterParams.complianceStatus ?? "All statuses",
+            accountStatus: filterParams.accountStatus ?? "All",
+            joinedDate: filterParams.joinedDate ?? "All time",
         }),
         [filterParams]
     );
 
     const handleUserFilterChange = useCallback((filterId: string, value: string) => {
-        setFilterParams((prevParams) => {
-            // Create a shallow copy of the previous parameters
-            const updatedParams = { ...prevParams };
-
-            // Define terms that signify an inactive/clear filter state
-            const isDefaultValue =
-                value === "" ||
-                value.toLowerCase() === "all" ||
-                value.toLowerCase() === "all statuses" ||
-                value.toLowerCase() === "all locations" ||
-                value.toLowerCase() === "all time";
-
-            if (isDefaultValue) {
-                // Remove the key entirely so it won't be sent as a query parameter
-                delete updatedParams[filterId];
-            } else {
-                // Set or overwrite with the new active value
-                updatedParams[filterId] = value.toLocaleLowerCase().trim();
-            }
-
-            // console.log("Updated Filter Query Parameters:", updatedParams);
-            return updatedParams;
-        });
+        setFilterParams((prevParams) => applyUserFilterChange(prevParams, filterId, value));
     }, []);
 
-    // useEffect(() => {
-    //     console.log("filterParams changed:", filterParams);
-    // }, [filterParams]);
+    const openMobileFilters = useCallback(() => {
+        showModal({
+            cover: true,
+            panelClassName: "!w-full !max-w-none h-full max-h-[100vh] !rounded-none !bg-white",
+            dismissOnOverlayClick: false,
+            content: (close) => (
+                <UserFiltersModal
+                    initialParams={filterParams}
+                    onApply={(nextParams) => setFilterParams(nextParams)}
+                    onReset={() => setFilterParams({})}
+                    onClose={close}
+                />
+            ),
+        });
+    }, [filterParams, showModal]);
 
     const formatUserFilterOptionLabel = useCallback(
         (option: string) => (option === "Alll" ? "All statuses" : option),
@@ -209,21 +188,22 @@ export default function AllUsersBody() {
     );
 
     const processedUsers = useMemo(() => {
-        const filteredUsers: any = usersData;
-        return filteredUsers?.data?.users.filter((user: any) => {
-            // Note: Data is filtered via API query parameters now. 
-            // Local client filtering rules can be safely toggled back on here if needed.
-            return true;
-        }) ?? [];
+        if (!usersData) return [];
+        try {
+            return parseAdminUsersResponse(usersData).users;
+        } catch {
+            const raw: any = usersData;
+            return (
+                raw?.data?.users ??
+                raw?.users ??
+                (Array.isArray(raw?.data) ? raw.data : []) ??
+                (Array.isArray(raw) ? raw : [])
+            );
+        }
     }, [usersData]);
 
     const activeFiltersCount = useMemo(() => {
-        let count = 0;
-        if (filterParams.complianceStatus !== "All statuses" && filterParams.complianceStatus !== "") count++;
-        if (filterParams.accountStatus !== "All") count++;
-        if (filterParams.joinedDate !== "All time" && filterParams.joinedDate !== "") count++;
-        if (filterParams.location !== "All locations") count++;
-        return count || 1;
+        return countActiveUserFilters(filterParams);
     }, [filterParams]);
 
     return (
@@ -343,14 +323,16 @@ export default function AllUsersBody() {
 
                                 <button
                                     type="button"
-                                    onClick={() => { }}
+                                    onClick={openMobileFilters}
                                     aria-label="Open filters"
                                     className="relative rounded-xl border border-[#0B0E0514] bg-[#FFFFFF] p-2.5 text-[#0B0E05CC] focus:outline-none md:hidden"
                                 >
                                     <SlidersHorizontalIcon className="h-5 w-5 text-[#343330]" />
-                                    <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#CC2929] text-[9px] font-bold text-white">
-                                        {formatCount(activeFiltersCount)}
-                                    </span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#CC2929] text-[9px] font-bold text-white">
+                                            {formatCount(activeFiltersCount)}
+                                        </span>
+                                    )}
                                 </button>
                             </div>
 

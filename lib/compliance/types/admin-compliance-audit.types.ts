@@ -156,6 +156,20 @@ export interface AdminComplianceAuditDocumentPreview {
     /** Ordered fallback URLs tried when the primary preview fails. */
     previewCandidates: string[];
     isImage: boolean;
+    /** Cloudinary / backend file identifier used to request viewing link. */
+    fileId?: string;
+    /** Verification type context ('kyc' or 'kyb') used for viewing link API. */
+    verificationType?: "kyc" | "kyb";
+    /** Size of the document in bytes (if available from backend). */
+    bytes?: number;
+    /** Document type identifier from backend (e.g. 'gov_id', 'resale_certificate'). */
+    type?: string;
+    /** Original filename uploaded by the user. */
+    originalFilename?: string;
+    /** Document review rejection reason if rejected. */
+    rejectionReason?: string | null;
+    /** Timestamp when document was created. */
+    createdAt?: string;
 }
 
 /** Full API row plus display helpers used by the audit table. */

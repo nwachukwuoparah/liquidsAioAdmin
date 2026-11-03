@@ -127,7 +127,8 @@ export default function GmvOrdersTrendChart({ trendData }: { trendData?: TrendDa
     useEffect(() => {
         const hasSelection = selectedDate && data.some((point) => point.date === selectedDate);
         if (!hasSelection) {
-            setSelectedDate(data[data.length - 1]?.date ?? null);
+            const defaultDate = data.find((point) => point.date === "Aug 30")?.date;
+            setSelectedDate(defaultDate ?? data[data.length - 1]?.date ?? null);
         }
     }, [data, selectedDate]);
 

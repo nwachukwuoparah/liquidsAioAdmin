@@ -14,7 +14,7 @@ interface UserActionMenuProps {
     onToggle: () => void;
     onClose: () => void;
     placement?: "top" | "bottom";
-    userDetails: any
+    userDetails?: any;
 }
 
 export default function UserActionMenu({
@@ -60,6 +60,7 @@ export default function UserActionMenu({
                         onClose();
                         showModal({
                             content: <UserDetailsModal details={userDetails} />,
+                            panelClassName: "max-w-[640px] w-full p-0 rounded-2xl overflow-hidden",
                         });
                     }}
                     className="flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-left transition-colors hover:bg-slate-50"

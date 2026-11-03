@@ -14,7 +14,7 @@ import { buildComplianceReviewQueryParams, resolveComplianceDateRange } from "@/
 import { CARD_BG_CLASS, LIST_CARD_CLASS, PANEL_CARD_CLASS, PANEL_CARD_SHELL_CLASS, SECTION_CARD_CLASS, STAT_CARD_CLASS } from "@/lib/card-styles";
 import { formatCount } from "@/lib/format-count";
 import { SlidersHorizontalIcon } from "@/components/vector";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { COMPLIANCE_OVERVIEW_STAT_CARDS } from "@/lib/admin/constants/admin-overview.constant";
 import { useAdminComplianceOverview } from "@/lib/admin/hooks/use-admin-compliance";
 import type { AdminComplianceReviewRecord } from "@/lib/admin/types/admin-api.types";
@@ -146,18 +146,36 @@ export default function ComplianceBody() {
     const [activeTab, setActiveTab] = useState<string>("Pending");
     const [openActionId, setOpenActionId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [filterParams, setFilterParams] = useState<Record<string, string>>({});
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [filterParams, setFilterParams] = useState<Record<string, string>>({
+        compliance_review_status: "pending",
+    });
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const isAuditLogsTab = activeTab === AUDIT_LOGS_TAB;
-    const activeTabStatus = ACTIVE_TAB_STATUS_MAP[activeTab];
-    const complianceQueryParams = useMemo(
-        () => ({
-            ...buildComplianceReviewQueryParams(filterParams),
-            ...(searchQuery.trim() ? { email: searchQuery.trim() } : {}),
-            ...(activeTabStatus ? { compliance_review_status: activeTabStatus } : {}),
-        }),
-        [activeTabStatus, filterParams, searchQuery],
-    );
+    const complianceQueryParams = useMemo(() => {
+        const baseParams = buildComplianceReviewQueryParams(filterParams);
+        const query: Record<string, string> = { ...baseParams };
+
+        if (filterParams.compliance_review_status) {
+            query.compliance_review_status = filterParams.compliance_review_status;
+            query.status = filterParams.compliance_review_status;
+        }
+
+        const trimmedEmail = debouncedSearch.trim();
+        if (trimmedEmail) {
+            query.email = trimmedEmail.toLowerCase();
+        }
+
+        return query;
+    }, [filterParams, debouncedSearch]);
 
     const complianceReviewsQuery = useAdminComplianceReviews(complianceQueryParams, !isAuditLogsTab);
     const complianceOverviewQuery = useAdminComplianceOverview();
@@ -196,10 +214,33 @@ export default function ComplianceBody() {
             compliance_review_status: filterParams.compliance_review_status
                 ? COMPLIANCE_REVIEW_STATUS_LABELS[filterParams.compliance_review_status]
                 : undefined,
+            status: filterParams.compliance_review_status
+                ? COMPLIANCE_REVIEW_STATUS_LABELS[filterParams.compliance_review_status]
+                : undefined,
             dateRange: filterParams.dateRange,
         }),
         [filterParams],
     );
+
+    const handleTabClick = useCallback((tabName: string) => {
+        setActiveTab(tabName);
+        if (tabName === AUDIT_LOGS_TAB) {
+            return;
+        }
+
+        const status = ACTIVE_TAB_STATUS_MAP[tabName];
+        setFilterParams((prevParams) => {
+            const nextParams = { ...prevParams };
+            if (status) {
+                nextParams.compliance_review_status = status;
+                nextParams.status = status;
+            } else {
+                delete nextParams.compliance_review_status;
+                delete nextParams.status;
+            }
+            return nextParams;
+        });
+    }, []);
 
     const handleComplianceFilterChange = useCallback((filterId: string, value: string) => {
         setFilterParams((prevParams) => {
@@ -228,14 +269,25 @@ export default function ComplianceBody() {
                 }
 
                 return updatedParams;
-            };
+            }
 
             if (isDefaultValue) {
                 delete updatedParams[filterId];
+                if (filterId === "compliance_review_status" || filterId === "status") {
+                    delete updatedParams.compliance_review_status;
+                    delete updatedParams.status;
+                    setActiveTab("");
+                }
             } else if (filterId === "account_type") {
                 updatedParams.account_type = value.toLowerCase();
-            } else if (filterId === "compliance_review_status") {
-                updatedParams.compliance_review_status = mapComplianceReviewStatusValue(value);
+            } else if (filterId === "compliance_review_status" || filterId === "status") {
+                const mappedStatus = mapComplianceReviewStatusValue(value);
+                updatedParams.compliance_review_status = mappedStatus;
+                updatedParams.status = mappedStatus;
+                const matchingTab = Object.keys(ACTIVE_TAB_STATUS_MAP).find(
+                    (tab) => ACTIVE_TAB_STATUS_MAP[tab] === mappedStatus,
+                );
+                setActiveTab(matchingTab ?? "");
             } else {
                 updatedParams[filterId] = value.toLowerCase().trim();
             }
@@ -310,7 +362,7 @@ export default function ComplianceBody() {
                             return (
                                 <button
                                     key={tab.name}
-                                    onClick={() => setActiveTab(tab.name)}
+                                    onClick={() => handleTabClick(tab.name)}
                                     className={`rounded-full px-5 py-2.5 border transition-all duration-150 shrink-0 flex items-center gap-2 ${isActive
                                         ? "border-[#65A30D] bg-[#84CC16]/10 text-[#4D7C0F]"
                                         : "border-[#0B0E0514] text-slate-500 bg-[#FFFFFF]"
@@ -449,7 +501,7 @@ export default function ComplianceBody() {
                                 return (
                                     <button
                                         key={tab.name}
-                                        onClick={() => setActiveTab(tab.name)}
+                                        onClick={() => handleTabClick(tab.name)}
                                         className={`relative py-4 transition-colors shrink-0 flex items-center gap-2 ${isActive ? "text-[#65A30D]" : "text-slate-500 hover:text-slate-800"
                                             }`}
                                     >

@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     await sampleAdminApiDelay();
     const searchParams = getSampleAdminRouteSearchParams(request);
     const complianceReviewStatus = normalizeReviewStatusParam(
-        searchParams.get("compliance_review_status"),
+        searchParams.get("compliance_review_status") ?? searchParams.get("status"),
     );
     const accountType = searchParams.get("account_type")?.toLowerCase();
     const email = searchParams.get("email")?.toLowerCase();

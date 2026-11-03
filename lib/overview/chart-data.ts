@@ -32,12 +32,13 @@ const TREND_DATA_30D: TrendDataPoint[] = [
 ];
 
 export const CATEGORY_GMV_DATA: CategoryGmvItem[] = [
-    { name: "Clothing", value: 20, color: "#B91C1C" },
-    { name: "Electronics", value: 25, color: "#60A5FA" },
-    { name: "Skin care", value: 10, color: "#10B981" },
-    { name: "Farm product", value: 15, color: "#F97316" },
-    { name: "Foods", value: 20, color: "#8B5CF6" },
-    { name: "Fashion", value: 10, color: "#EC4899" },
+    { name: "Home & garden", value: 20, color: "#7C3AED" },
+    { name: "Foods", value: 18, color: "#831843" },
+    { name: "Fashion", value: 12, color: "#EC4899" },
+    { name: "Clothing", value: 18, color: "#991B1B" },
+    { name: "Electronics", value: 18, color: "#38BDF8" },
+    { name: "Skin care", value: 8, color: "#059669" },
+    { name: "Farm product", value: 6, color: "#EA580C" },
 ];
 
 export function formatGmv(value: number): string {

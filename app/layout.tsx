@@ -38,11 +38,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body suppressHydrationWarning className={`${mulish.variable} ${momoTrustDisplay.variable} font-mulish antialiased`}>
-        <Script
-          // src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}&libraries=places`}
-          // strategy="afterInteractive"
-        />
-        <QueryProvider>
+        {process.env.NEXT_PUBLIC_GOOGLE_API_KEY ? (
+          <Script
+            src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}&libraries=places`}
+            strategy="afterInteractive"
+          />
+        ) : null}        <QueryProvider>
           <NavigationProgressBar />
           {children}
         </QueryProvider>

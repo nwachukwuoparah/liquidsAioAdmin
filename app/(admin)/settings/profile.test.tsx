@@ -68,13 +68,15 @@ describe("ProfileSettings", () => {
         expect(getMock).toHaveBeenCalledWith("/profile/me");
     });
 
-    it("populates profile inputs and email from the profile me response", async () => {
+    it("populates profile inputs from the profile me response and omits account settings", async () => {
         mockProfileSettingsApi();
         renderWithQueryClient(<ProfileSettings />);
 
         expect(await screen.findByDisplayValue("Samuel Nathaniel")).toBeInTheDocument();
         expect(screen.getByLabelText("Phone number")).toHaveValue("+1 212 456 7890");
-        expect(screen.getByText("[samuel@liquidsaio.com]")).toBeInTheDocument();
+        expect(screen.queryByText("Account settings")).not.toBeInTheDocument();
+        expect(screen.queryByText("Change email")).not.toBeInTheDocument();
+        expect(screen.queryByText("Change password")).not.toBeInTheDocument();
         expect(screen.queryByText("Two-factor authentication")).not.toBeInTheDocument();
     });
 

@@ -29,13 +29,25 @@ export const INVENTORY_CATEGORY_LABEL_TO_CODE: Record<string, string> = {
     "Apparel & Footwear": "afw",
     "Home & Kitchen": "hkn",
     "Health & Beauty": "hby",
+    "General Merchandise": "gml",
+    "General Merchandise / Mixed Lots": "gml",
+    "Toys & Baby": "tby",
 };
 
 /** Maps filter dropdown labels to API condition values. */
 export const INVENTORY_CONDITION_LABEL_TO_VALUE: Record<string, string> = {
     New: "new",
+    Refurbished: "refurbished",
     Mixed: "mixed",
     Overstock: "overstock",
+};
+
+/** Maps condition API values back to display labels. */
+export const INVENTORY_CONDITION_VALUE_TO_LABEL: Record<string, string> = {
+    new: "New",
+    refurbished: "Refurbished",
+    mixed: "Mixed",
+    overstock: "Overstock",
 };
 
 /** Maps lot status filter labels to review_status API values. */
@@ -43,6 +55,7 @@ export const INVENTORY_STATUS_LABEL_TO_REVIEW_STATUS: Record<string, string> = {
     Active: "approved",
     Pending: "pending",
     "Pending approval": "pending",
+    "In review": "in_review",
     Declined: "rejected",
     Rejected: "rejected",
     Suspended: "suspended",
@@ -52,14 +65,14 @@ export const INVENTORY_STATUS_LABEL_TO_REVIEW_STATUS: Record<string, string> = {
 export const INVENTORY_REVIEW_STATUS_LABELS: Record<string, string> = {
     approved: "Active",
     pending: "Pending",
+    in_review: "In review",
     rejected: "Declined",
     suspended: "Suspended",
-    in_review: "Pending",
 };
 
 /** Maps category API codes to display labels. */
 export const INVENTORY_CATEGORY_CODE_TO_LABEL: Record<string, string> = {
-    gml: "General Merchandise / Mixed Lots",
+    gml: "General Merchandise",
     elt: "Electronics",
     afw: "Apparel & Footwear",
     hkn: "Home & Kitchen",

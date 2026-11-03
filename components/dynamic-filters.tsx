@@ -10,6 +10,8 @@ export interface FilterConfig {
     defaultValue: string;
     icon?: ReactNode;
     isSearchable?: boolean;
+    isPlacesAutocomplete?: boolean;
+    customRangeKind?: "date" | "price";
     searchPlaceholder?: string;
 }
 
@@ -45,6 +47,8 @@ export default function DynamicFilters({
                         filterLabel={filter.label}
                         filterIcon={filter.icon}
                         isSearchable={filter.isSearchable}
+                        isPlacesAutocomplete={filter.isPlacesAutocomplete}
+                        customRangeKind={filter.customRangeKind}
                         searchPlaceholder={filter.searchPlaceholder}
                         options={filter.options.map((option) => ({
                             value: option,
